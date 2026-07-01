@@ -1,0 +1,29 @@
+{
+  "id": "example-title",
+  "name": "Example.com Title Workflow",
+  "version": "1.0",
+  "settings": {
+    "defaultTimeout": 30000
+  },
+  "steps": [
+    {
+      "id": "open-example",
+      "command": "newTab",
+      "params": {
+        "url": "https://example.com"
+      },
+      "wait": {
+        "type": "delay",
+        "ms": 1000
+      }
+    },
+    {
+      "id": "read-title",
+      "command": "evaluateJS",
+      "params": {
+        "code": "return document.title;"
+      },
+      "captureAs": "PAGE_TITLE"
+    }
+  ]
+}
