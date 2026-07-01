@@ -53,9 +53,13 @@ async function pingGateway(gateway, profileId) {
     const body = { method: 'ping', params: {} };
     if (profileId) body.profileId = profileId;
 
+    const headers = { 'Content-Type': 'application/json' };
+    const token = process.env.WEBMCP_GATEWAY_TOKEN;
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     const response = await fetch(gateway.apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
       signal,
     });

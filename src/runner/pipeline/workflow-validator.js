@@ -396,7 +396,30 @@ function validateWorkflow(workflow, options = {}) {
     if (!isObject(step)) continue;
     const label = `Step ${index + 1}${step.id ? ` "${step.id}"` : ''}`;
 
-    /* command or strategy required */
+    /* step type */
+    if (step.type !== undefined && step.type !== 'command' && step.type !== 'forEach') {
+      errors.push(`${label}: unknown step type "${step.type}"`);
+    }
+
+    /* forEach config (body-1-step: the loop body is this step's own command/strategy) */
+    if (step.type === 'forEach') {
+      if (!isObject(step.forEach)) {
+        errors.push(`${label}: forEach step requires a "forEach" config object`);
+      } else {
+        if (step.forEach.items === undefined) errors.push(`${label}: forEach requires "items"`);
+        if (typeof step.forEach.as !== 'string' || !step.forEach.as) {
+          errors.push(`${label}: forEach requires "as" (non-empty string)`);
+        }
+        if (step.forEach.indexAs !== undefined && (typeof step.forEach.indexAs !== 'string' || !step.forEach.indexAs)) {
+          errors.push(`${label}: forEach.indexAs must be a non-empty string`);
+        }
+        if (step.forEach.collectAs && !step.captureAs) {
+          errors.push(`${label}: forEach.collectAs requires the step to set "captureAs"`);
+        }
+      }
+    }
+
+    /* command or strategy required (also the forEach body) */
     if (!step.command && !step.strategy) {
       errors.push(`${label}: must define either "command" or "strategy"`);
     }
@@ -465,10 +488,21 @@ function validateWorkflow(workflow, options = {}) {
     validateRetryPolicy(step.retryPolicy, label, errors);
     validateWait(step.wait, label, errors);
     validateGuard(step.guard, label, errors);
-    validateTemplateRefs(step, label, knownVariables, stepIds, errors, warnings, strict);
+
+    /* loop-scoped variables (as/indexAs) are known inside a forEach body */
+    let stepKnownVariables = knownVariables;
+    if (step.type === 'forEach' && isObject(step.forEach)) {
+      stepKnownVariables = new Set(knownVariables);
+      if (step.forEach.as) stepKnownVariables.add(step.forEach.as);
+      stepKnownVariables.add(step.forEach.indexAs || '__INDEX__');
+    }
+    validateTemplateRefs(step, label, stepKnownVariables, stepIds, errors, warnings, strict);
 
     if (step.captureAs) {
       knownVariables.add(step.captureAs);
+    }
+    if (step.type === 'forEach' && step.forEach?.collectAs) {
+      knownVariables.add(step.forEach.collectAs);
     }
   }
 

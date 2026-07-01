@@ -164,6 +164,7 @@ function normalizeStep(step, index, settings) {
   const normalized = {
     ...step,
     index,
+    type: step.type || (step.forEach ? 'forEach' : 'command'),
     critical: step.critical !== false,
     timeoutMs: Math.max(1, toNumber(step.timeoutMs, settings.defaultTimeout)),
     retryPolicy: normalizeRetryPolicy(step.retryPolicy, settings.defaultRetryPolicy),

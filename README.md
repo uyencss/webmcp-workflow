@@ -64,9 +64,69 @@ The source skill lives in `skills/workflow-dispatcher-cli/`. The installer
 copies it into each provider's global skill/rules directory, following the same
 pattern as `mcp-web-extension/scripts/install-agent.mjs`.
 
+## Prerequisites
+
+The workflow dispatcher sends commands to a real browser through the **WebMCP
+gateway** and **Chrome extension** provided by
+[`@gyga-browser/webmcp-browser-automation-kit`](https://www.npmjs.com/package/@gyga-browser/webmcp-browser-automation-kit).
+Both must be running before any `run` command will work.
+
+### 1. Install the Chrome extension
+
+Print the path to the bundled unpacked extension:
+
+```bash
+npx -y @gyga-browser/webmcp-browser-automation-kit extension-path
+```
+
+Then load it into Chrome:
+
+1. Open `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked**.
+4. Select the path printed above.
+
+### 2. Start the WebMCP gateway
+
+In a dedicated terminal, start the gateway:
+
+```bash
+npx -y @gyga-browser/webmcp-browser-automation-kit gateway start
+```
+
+### 3. Verify connectivity
+
+In another terminal, confirm the extension is connected to the gateway:
+
+```bash
+npx -y @gyga-browser/webmcp-browser-automation-kit health --json
+```
+
+A successful response shows `"extensionConnected": true`.
+
+### 4. (Optional) Configure MCP server for AI agents
+
+If you want AI agents (Claude, Codex, Cursor, etc.) to call browser commands
+via MCP, add this to your client's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "webmcp": {
+      "command": "npx",
+      "args": ["-y", "@gyga-browser/webmcp-browser-automation-kit", "mcp"]
+    }
+  }
+}
+```
+
+See the
+[webmcp-browser-automation-kit README](https://github.com/uyencss/web-automation-extension#readme)
+for full MCP setup details per client.
+
 ## Gateway
 
-Start the WebMCP gateway and connect the Chrome extension first. By default the CLI uses:
+By default the CLI connects to:
 
 ```bash
 WEBMCP_GATEWAY_URL=http://localhost:7865/api

@@ -53,10 +53,20 @@ class EventLogger {
     if (event.type === 'step') {
       const prefix = `[${(payload.stepIndex ?? 0) + 1}/${payload.totalSteps ?? '?'}] ${payload.stepId}`;
       if (payload.type === 'started') {
-        const kind = payload.strategy ? `strategy:${payload.strategy}` : payload.command;
-        this.stdout.write(`${prefix} started (${kind})\n`);
+        if (payload.forEach) {
+          const body = payload.strategy ? `strategy:${payload.strategy}` : payload.command;
+          this.stdout.write(`${prefix} started (forEach, ${payload.forEach.totalIterations} items -> ${body})\n`);
+        } else {
+          const kind = payload.strategy ? `strategy:${payload.strategy}` : payload.command;
+          this.stdout.write(`${prefix} started (${kind})\n`);
+        }
       } else if (payload.type === 'completed') {
-        this.stdout.write(`${prefix} completed in ${payload.duration}ms\n`);
+        if (payload.forEach) {
+          const collected = payload.forEach.collectAs ? ` — collected ${payload.forEach.collectAs}` : '';
+          this.stdout.write(`${prefix} completed (${payload.forEach.iterations} iterations) in ${payload.duration}ms${collected}\n`);
+        } else {
+          this.stdout.write(`${prefix} completed in ${payload.duration}ms\n`);
+        }
       } else if (payload.type === 'retrying') {
         this.stdout.write(`${prefix} retrying attempt ${payload.nextAttempt} after ${payload.delayMs}ms: ${payload.error?.code} ${payload.error?.message}\n`);
       } else if (payload.type === 'skipped') {

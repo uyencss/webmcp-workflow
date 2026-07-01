@@ -1,0 +1,17 @@
+{
+  "id": "foreach-fire-and-forget",
+  "name": "forEach fire-and-forget",
+  "version": "1.0",
+  "variables": {
+    "PAGES": [1, 2, 3]
+  },
+  "steps": [
+    {
+      "id": "visit-each",
+      "type": "forEach",
+      "forEach": { "items": "{{PAGES}}", "as": "page" },
+      "command": "evaluateJS",
+      "params": { "code": "visit {{page}}" }
+    }
+  ]
+}

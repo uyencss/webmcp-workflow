@@ -448,7 +448,9 @@ class WorkflowRunner extends EventEmitter {
 
         const step = steps[currentIndex];
         this.state.currentStepId = step.id;
-        const record = await this.executeStep(step, currentIndex, steps.length);
+        const record = step.type === 'forEach'
+          ? await this.executeForEachStep(step, currentIndex, steps.length)
+          : await this.executeStep(step, currentIndex, steps.length);
         this.state.results.push(record);
 
         if (record.status === 'success') {
@@ -542,6 +544,112 @@ class WorkflowRunner extends EventEmitter {
   checkAborted() {
     if (!this.abortController.signal.aborted) return;
     throw normalizeError(this.abortController.signal.reason || new RunnerError('Workflow aborted', { code: 'ABORTED' }));
+  }
+
+  /* ── forEach step execution (body-1-step) ────────────── */
+
+  /**
+   * Execute a `type: "forEach"` step.  The loop body is the step's own
+   * command/strategy, run once per item in `forEach.items` via the normal
+   * {@link executeStep} path (so guard/retry/wait/capture apply per iteration).
+   *
+   * The current item is bound to `forEach.as` and the 0-based index to
+   * `forEach.indexAs` (default `__INDEX__`) for the duration of each iteration.
+   * When `collectAs` is set (and the step has `captureAs`), each iteration's
+   * captured value is appended into an array published under `collectAs`.
+   *
+   * @param {Object} step       - The normalized forEach step.
+   * @param {number} stepIndex  - Zero-based position.
+   * @param {number} totalSteps - Total number of top-level steps.
+   * @returns {Promise<Object>} Summary record (or the failing iteration record).
+   */
+  async executeForEachStep(step, stepIndex, totalSteps) {
+    const startedAt = Date.now();
+    const basePayload = { stepId: step.id, stepIndex, totalSteps, command: step.command, strategy: step.strategy };
+    const config = this.context.interpolate(step.forEach || {});
+
+    let items = config.items;
+    if (typeof items === 'string') items = this.context.get(items);
+    if (!Array.isArray(items)) {
+      const error = new RunnerError('forEach.items must resolve to an array', { code: 'VALIDATION_ERROR' });
+      return this.makeFailedStepRecord(step, basePayload, startedAt, 0, error);
+    }
+
+    const asName = config.as;
+    const indexName = config.indexAs || '__INDEX__';
+
+    this.emitRunnerEvent('step', {
+      type: 'started',
+      ...basePayload,
+      forEach: { totalIterations: items.length, as: asName },
+    });
+
+    const body = { ...step, type: 'command' };
+    delete body.forEach;
+
+    const collected = [];
+    const iterationResults = [];
+
+    for (let i = 0; i < items.length; i++) {
+      this.checkAborted();
+      this.context.pushScope({ [asName]: items[i], [indexName]: i });
+
+      let iterationRecord;
+      try {
+        const iterStep = { ...body, id: `${step.id}[${i}]` };
+        iterationRecord = await this.executeStep(iterStep, stepIndex, totalSteps);
+        iterationResults.push(iterationRecord);
+        if (config.collectAs && step.captureAs && iterationRecord.status === 'success') {
+          collected.push(this.context.get(step.captureAs));
+        }
+      } finally {
+        this.context.popScope();
+      }
+
+      if (iterationRecord.status === 'failed' && step.critical !== false) {
+        if (config.collectAs) this.context.setCaptured(config.collectAs, collected);
+        const duration = Date.now() - startedAt;
+        const record = {
+          status: 'failed',
+          ...basePayload,
+          duration,
+          iterations: i + 1,
+          iterationResults,
+          error: iterationRecord.error,
+        };
+        this.context.setStepResult(step.id, record);
+        this.emitRunnerEvent('step', {
+          type: 'failed',
+          ...basePayload,
+          duration,
+          error: iterationRecord.error,
+        });
+        return record;
+      }
+    }
+
+    if (config.collectAs) {
+      this.context.setCaptured(config.collectAs, collected);
+      this.emitRunnerEvent('progress', { stepId: step.id, captureAs: config.collectAs });
+    }
+
+    const duration = Date.now() - startedAt;
+    const record = {
+      status: 'success',
+      ...basePayload,
+      duration,
+      iterations: items.length,
+      iterationResults,
+      ...(config.collectAs ? { collectAs: config.collectAs } : {}),
+    };
+    this.context.setStepResult(step.id, record);
+    this.emitRunnerEvent('step', {
+      type: 'completed',
+      ...basePayload,
+      duration,
+      forEach: { iterations: items.length, collectAs: config.collectAs },
+    });
+    return record;
   }
 
   /* ── Step execution (with retry loop) ────────────────── */

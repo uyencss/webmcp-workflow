@@ -25,6 +25,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_NAME = 'workflow-dispatcher-cli';
 const SKILL_SRC = join(ROOT, 'skills', SKILL_NAME);
+const CREATOR_SKILL_NAME = 'webmcp-workflow-creator';
+// Skills copied into every provider's skills directory.
+const ALL_SKILLS = [SKILL_NAME, CREATOR_SKILL_NAME];
 const BIN_SRC = join(ROOT, 'bin', 'workflow-dispatcher.js');
 const INSTALL_HOME = process.env.WORKFLOW_DISPATCHER_INSTALL_HOME || homedir();
 
@@ -42,6 +45,22 @@ function copySkill(dest) {
   mkdirSync(dirname(dest), { recursive: true });
   cpSync(SKILL_SRC, dest, { recursive: true });
   ok(`Skill copied -> ${dest}`);
+}
+
+// Copy every skill in ALL_SKILLS into a provider's skills directory.
+function copySkillsInto(skillsDir) {
+  for (const name of ALL_SKILLS) {
+    const src = join(ROOT, 'skills', name);
+    const dest = join(skillsDir, name);
+    if (!existsSync(src)) {
+      note(`Skipping skill: ${src} not found`);
+      continue;
+    }
+    rmSync(dest, { recursive: true, force: true });
+    mkdirSync(dirname(dest), { recursive: true });
+    cpSync(src, dest, { recursive: true });
+    ok(`Skill copied -> ${dest}`);
+  }
 }
 
 function installLocalBin() {
@@ -76,20 +95,20 @@ function writeIfAbsent(file, content) {
 const TARGETS = {
   local() {
     head('Local Codex Test Install');
-    copySkill(join(INSTALL_HOME, '.codex', 'skills', SKILL_NAME));
+    copySkillsInto(join(INSTALL_HOME, '.codex', 'skills'));
     installLocalBin();
   },
 
   claude() {
     head('Claude Code');
-    copySkill(join(INSTALL_HOME, '.claude', 'skills', SKILL_NAME));
+    copySkillsInto(join(INSTALL_HOME, '.claude', 'skills'));
     note('Use the CLI from this checkout:');
     log(`  node ${BIN_SRC} --help`);
   },
 
   codex() {
     head('Codex');
-    copySkill(join(INSTALL_HOME, '.codex', 'skills', SKILL_NAME));
+    copySkillsInto(join(INSTALL_HOME, '.codex', 'skills'));
     note('Use `webmcp-workflow` when installed, `webmcp workflow` from the monorepo checkout, or run `npm run install:local` to create the direct ~/.local/bin/workflow-dispatcher fallback.');
   },
 
@@ -101,25 +120,32 @@ const TARGETS = {
 
   gemini() {
     head('Gemini CLI');
-    copySkill(join(INSTALL_HOME, '.gemini', 'config', 'skills', SKILL_NAME));
+    copySkillsInto(join(INSTALL_HOME, '.gemini', 'config', 'skills'));
   },
 
   antigravity() {
     head('Antigravity');
-    copySkill(join(INSTALL_HOME, '.gemini', 'config', 'skills', SKILL_NAME));
+    copySkillsInto(join(INSTALL_HOME, '.gemini', 'config', 'skills'));
   },
 
   cursor() {
     head('Cursor');
-    const source = join(SKILL_SRC, 'SKILL.md');
-    const dest = join(INSTALL_HOME, '.cursor', 'rules', `${SKILL_NAME}.mdc`);
-    writeIfAbsent(dest, [
+    writeIfAbsent(join(INSTALL_HOME, '.cursor', 'rules', `${SKILL_NAME}.mdc`), [
       '---',
       'description: Run WebMCP workflow JSON through webmcp-workflow',
       'alwaysApply: false',
       '---',
       '',
-      `See source skill: ${source}`,
+      `See source skill: ${join(SKILL_SRC, 'SKILL.md')}`,
+      '',
+    ].join('\n'));
+    writeIfAbsent(join(INSTALL_HOME, '.cursor', 'rules', `${CREATOR_SKILL_NAME}.mdc`), [
+      '---',
+      'description: Author WebMCP workflow JSON (API-first, forEach, getPageText)',
+      'alwaysApply: false',
+      '---',
+      '',
+      `See source skill: ${join(ROOT, 'skills', CREATOR_SKILL_NAME, 'SKILL.md')}`,
       '',
     ].join('\n'));
   },

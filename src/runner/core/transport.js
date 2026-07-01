@@ -119,9 +119,15 @@ async function sendCommand(method, params = {}, options = {}) {
     const requestBody = { method, params };
     if (options.profileId) requestBody.profileId = options.profileId;
 
+    const headers = { 'Content-Type': 'application/json' };
+    // Attach the gateway token when provided so runs work against a
+    // token-protected (app-managed) gateway. Unset = open gateway, no header.
+    const token = process.env.WEBMCP_GATEWAY_TOKEN;
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     const response = await fetch(gatewayUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(requestBody),
       signal: controller.signal,
     });

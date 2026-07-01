@@ -1,0 +1,18 @@
+{
+  "id": "foreach-strings",
+  "name": "forEach over strings (collect)",
+  "version": "1.0",
+  "variables": {
+    "WORDS": ["alpha", "beta", "gamma"]
+  },
+  "steps": [
+    {
+      "id": "each-word",
+      "type": "forEach",
+      "forEach": { "items": "{{WORDS}}", "as": "word", "indexAs": "i", "collectAs": "ALL" },
+      "command": "evaluateJS",
+      "params": { "code": "{{word}}-{{i}}" },
+      "captureAs": "ONE"
+    }
+  ]
+}

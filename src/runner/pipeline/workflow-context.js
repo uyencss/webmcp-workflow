@@ -181,6 +181,36 @@ class WorkflowContext {
     this.steps = {};
     this.last = null;
     this.lastStepId = null;
+    this._scopeStack = [];
+  }
+
+  /**
+   * Push a set of loop-scoped variables, saving any shadowed values so they
+   * can be restored by {@link popScope}.  Used by `forEach` to bind the current
+   * item (`as`) and index (`indexAs`) only for the duration of one iteration.
+   *
+   * @param {Object} vars - Variables to inject for this scope.
+   */
+  pushScope(vars) {
+    const snapshot = {};
+    for (const key of Object.keys(vars)) {
+      snapshot[key] = this.variables[key];
+    }
+    this._scopeStack.push(snapshot);
+    Object.assign(this.variables, vars);
+  }
+
+  /**
+   * Restore the variable namespace to the state saved by the matching
+   * {@link pushScope}.  Variables that did not exist before are removed.
+   */
+  popScope() {
+    const snapshot = this._scopeStack.pop();
+    if (!snapshot) return;
+    for (const [key, prev] of Object.entries(snapshot)) {
+      if (prev === undefined) delete this.variables[key];
+      else this.variables[key] = prev;
+    }
   }
 
   /**
