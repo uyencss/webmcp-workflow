@@ -5,7 +5,7 @@ description: Run, validate, debug, and smoke-test WebMCP workflow JSON through t
 
 # Workflow Dispatcher CLI
 
-Use this skill when operating the `workflow-dispatcher` project from a terminal. The CLI lives in the repo root and wraps `runner/`:
+Use this skill when operating the `workflow-dispatcher` project from a terminal. The CLI lives in the repo root and wraps `src/runner/`:
 
 ```bash
 cd /Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher

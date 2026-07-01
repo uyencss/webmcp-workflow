@@ -2,7 +2,7 @@
 
 `workflow-dispatcher` is a local Node.js CLI for validating and running WebMCP workflow JSON through the WebMCP HTTP gateway.
 
-It wraps the existing `runner/` engine and supports the gateway's multi-profile request shape:
+It wraps the existing `src/runner/` engine and supports the gateway's multi-profile request shape:
 
 ```json
 { "method": "getActiveTab", "params": {}, "profileId": "profile-id" }

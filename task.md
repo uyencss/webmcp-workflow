@@ -22,29 +22,30 @@ const {
   RunnerError,
   validateWorkflow,
   normalizeWorkflow,
-} = require('./runner');
+} = require('./src/runner');
 ```
 
 Current runner layout:
 
 ```text
 workflow-dispatcher/
-  runner/
-    index.js
-    run.js
-    catalog/command-catalog.js
-    core/runner-events.js
-    core/transport.js
-    core/workflow-runner.js
-    pipeline/workflow-context.js
-    pipeline/workflow-normalizer.js
-    pipeline/workflow-validator.js
-    shared/errors.js
-    strategies/ai-vision.js
-    strategies/aria-ref.js
+  src/
+    runner/
+      index.js
+      run.js
+      catalog/command-catalog.js
+      core/runner-events.js
+      core/transport.js
+      core/workflow-runner.js
+      pipeline/workflow-context.js
+      pipeline/workflow-normalizer.js
+      pipeline/workflow-validator.js
+      shared/errors.js
+      strategies/ai-vision.js
+      strategies/aria-ref.js
 ```
 
-`runner/run.js` stays as a backward-compatible legacy entrypoint while the new CLI is built around `bin/workflow-dispatcher.js` and `src/`.
+`src/runner/run.js` stays as a backward-compatible legacy entrypoint while the primary CLI is `bin/workflow-dispatcher.js`.
 
 ## Non-Goals
 
@@ -122,14 +123,14 @@ workflow-dispatcher/
     dispatcher.js
     env-loader.js
     redaction.js
-  runner/
-    index.js
-    run.js
-    catalog/
-    core/
-    pipeline/
-    shared/
-    strategies/
+    runner/
+      index.js
+      run.js
+      catalog/
+      core/
+      pipeline/
+      shared/
+      strategies/
   tests/
     fixtures/
 ```
@@ -223,7 +224,7 @@ Profile resolution precedence:
     - [ ] `2` usage/config/validation/profile selection error.
     - [ ] `3` gateway unavailable or no extension/profile connected.
     - [ ] `130` aborted by signal.
-- [ ] Keep `runner/run.js` backward compatible.
+- [ ] Keep `src/runner/run.js` backward compatible.
 
 Acceptance:
 
@@ -264,13 +265,13 @@ Acceptance:
 
 Track detailed implementation in `docs/20260701_runner_multi_profile_gateway_implementation_plan.md`.
 
-- [ ] Update `runner/core/transport.js`.
+- [ ] Update `src/runner/core/transport.js`.
   - [ ] Accept `options.profileId`.
   - [ ] Include `profileId` as a top-level `/api` body field only when configured.
-- [ ] Update `runner/core/workflow-runner.js`.
+- [ ] Update `src/runner/core/workflow-runner.js`.
   - [ ] Accept `options.profileId`.
   - [ ] Pass it to transport on every gateway command.
-- [ ] Update `runner/run.js`.
+- [ ] Update `src/runner/run.js`.
   - [ ] Add `--profile-id`.
   - [ ] Add `WEBMCP_PROFILE_ID` fallback.
 - [ ] Add fake-transport tests for profile propagation.
@@ -284,7 +285,7 @@ Acceptance:
 ## Phase 4 — Executor and Workflow Commands
 
 - [ ] Create `src/executor.js`.
-  - [ ] Wrap `WorkflowRunner` from `runner/index.js`.
+  - [ ] Wrap `WorkflowRunner` from `src/runner/index.js`.
   - [ ] Normalize and validate workflow before execution.
   - [ ] Attach readable logger or JSON event logger.
   - [ ] Pass resolved `gatewayUrl`, `profileId`, variables, timeout, run id, strict mode, and unknown-command mode.
@@ -300,7 +301,7 @@ Acceptance:
   - [ ] Normalize and validate only.
   - [ ] Support `--strict` and `--allow-unknown-command`.
 - [ ] Implement `dry-run`.
-  - [ ] Reuse the current dry-run report behavior from `runner/run.js`.
+  - [ ] Reuse the current dry-run report behavior from `src/runner/run.js`.
   - [ ] Include commands, routes, template refs, step summary, gateway, and resolved profile.
 
 Acceptance:

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { WorkflowRunner } = require('../runner');
+const { WorkflowRunner } = require('../src/runner');
 
 test('WorkflowRunner forwards profileId to every transport call without mutating params', async () => {
   const calls = [];

@@ -8,7 +8,7 @@ const {
   getCommandGroups,
   isUnsupportedCommand,
   getUnsupportedReason,
-} = require('../runner');
+} = require('./runner');
 const { EventLogger } = require('./event-logger');
 const { createRunHistory, writeJson, appendJsonLine } = require('./run-history');
 const { redact } = require('./redaction');

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { sendCommand } = require('../runner');
+const { sendCommand } = require('../src/runner');
 
 test('transport sends profileId as a top-level gateway field', async () => {
   const calls = [];

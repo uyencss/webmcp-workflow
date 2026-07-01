@@ -1,4 +1,4 @@
-const { RunnerError, classifyMessage } = require('../runner');
+const { RunnerError, classifyMessage } = require('./runner');
 const { CliError } = require('./errors');
 
 function timeoutSignal(timeoutMs) {

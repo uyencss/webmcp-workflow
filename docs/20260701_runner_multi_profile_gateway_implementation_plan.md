@@ -2,7 +2,7 @@
 
 > Date: 2026-07-01  
 > Status: Planned  
-> Scope: `workflow-dispatcher/runner/`, future `workflow-dispatcher` CLI  
+> Scope: `workflow-dispatcher/src/runner/`, future `workflow-dispatcher` CLI  
 > Goal: make the reorganized runner able to execute workflow JSON against the new WebMCP gateway when one gateway serves multiple Chrome profiles.
 
 ## Context
@@ -10,7 +10,7 @@
 The runner was reorganized on 2026-07-01 from flat files into:
 
 ```text
-runner/
+src/runner/
   index.js
   run.js
   catalog/command-catalog.js
@@ -73,7 +73,7 @@ The runner should not guess aliases itself.
 
 ### Task 1: Add `profileId` support to transport
 
-File: `workflow-dispatcher/runner/core/transport.js`
+File: `workflow-dispatcher/src/runner/core/transport.js`
 
 - [ ] Extend `sendCommand(method, params, options)` JSDoc with `options.profileId`.
 - [ ] Build `requestBody` before `fetch`:
@@ -92,7 +92,7 @@ Acceptance:
 
 ### Task 2: Thread profile option through `WorkflowRunner`
 
-File: `workflow-dispatcher/runner/core/workflow-runner.js`
+File: `workflow-dispatcher/src/runner/core/workflow-runner.js`
 
 - [ ] Extend constructor JSDoc with `options.profileId`.
 - [ ] Pass `profileId: this.options.profileId` from `sendGatewayCommand()` into `this.transport(...)`.
@@ -105,7 +105,7 @@ Acceptance:
 
 ### Task 3: Update legacy runner CLI flags
 
-File: `workflow-dispatcher/runner/run.js`
+File: `workflow-dispatcher/src/runner/run.js`
 
 - [ ] Add `--profile-id ID`.
 - [ ] Add env fallback `WEBMCP_PROFILE_ID`.
@@ -115,8 +115,8 @@ File: `workflow-dispatcher/runner/run.js`
 
 Acceptance:
 
-- [ ] `node runner/run.js workflow.json --profile-id profile-A --dry-run` parses successfully.
-- [ ] `WEBMCP_PROFILE_ID=profile-A node runner/run.js workflow.json` routes through profile-A on live runs.
+- [ ] `node src/runner/run.js workflow.json --profile-id profile-A --dry-run` parses successfully.
+- [ ] `WEBMCP_PROFILE_ID=profile-A node src/runner/run.js workflow.json` routes through profile-A on live runs.
 
 ### Task 4: Add unit coverage with fake transport
 
@@ -211,16 +211,16 @@ If the current `classifyMessage()` cannot reliably distinguish profile errors, a
 ### No live gateway
 
 ```bash
-node -e "const { sendCommand, WorkflowRunner } = require('./runner'); console.log(Boolean(sendCommand && WorkflowRunner))"
-node runner/run.js workflows/gemini/generate_image.json --dry-run --profile-id profile-A
+node -e "const { sendCommand, WorkflowRunner } = require('./src/runner'); console.log(Boolean(sendCommand && WorkflowRunner))"
+node src/runner/run.js tests/fixtures/example-title-workflow.json --dry-run --profile-id profile-A
 npm test
 ```
 
 ### Live gateway, one profile
 
 ```bash
-node runner/run.js workflows/gemini/generate_image.json --dry-run
-node runner/run.js workflows/gemini/generate_image.json --gateway-url http://localhost:7865/api
+node src/runner/run.js tests/fixtures/example-title-workflow.json --dry-run
+node src/runner/run.js tests/fixtures/example-title-workflow.json --gateway-url http://localhost:7865/api
 ```
 
 Expected: no profile argument is required.
@@ -229,7 +229,7 @@ Expected: no profile argument is required.
 
 ```bash
 curl -sS http://localhost:7865/health
-node runner/run.js workflows/gemini/generate_image.json --profile-id <profile-id>
+node src/runner/run.js tests/fixtures/example-title-workflow.json --profile-id <profile-id>
 ```
 
 Expected:
@@ -241,7 +241,7 @@ Expected:
 
 - [ ] Runner transport supports top-level `profileId`.
 - [ ] `WorkflowRunner` forwards profile selection for every gateway command.
-- [ ] Legacy `runner/run.js` accepts `--profile-id` and `WEBMCP_PROFILE_ID`.
+- [ ] Legacy `src/runner/run.js` accepts `--profile-id` and `WEBMCP_PROFILE_ID`.
 - [ ] Dry-run remains available and backward compatible.
 - [ ] Tests verify request shape and runner option propagation without a live gateway.
 - [ ] Future CLI plan in `task.md` includes profile discovery, profile aliases, `doctor`, and `profiles`.

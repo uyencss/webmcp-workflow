@@ -1,5 +1,10 @@
 # Reorganize Runner Code with Documentation & Section Separation
 
+> Follow-up: after the CLI package was implemented, this reorganized runner tree
+> was moved under `src/runner/` so all runtime code lives inside `src/`.
+> The structure below describes the logical runner layout; prepend `src/` for
+> current paths.
+
 The `runner/` directory contains 9 flat files (927-line `workflow-runner.js`, 460-line `run.js`, 331-line `workflow-validator.js`, etc.) with zero JSDoc comments, zero section banners, and no structural grouping. The goal is to **add documentation and reorganize without changing any code logic**.
 
 ## Proposed Changes

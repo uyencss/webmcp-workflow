@@ -5,7 +5,7 @@
  * @description CLI entrypoint for the WebMCP JSON Workflow Runner.
  *
  * Usage:
- *   node runner/run.js <workflow.json> [options]
+ *   node src/runner/run.js <workflow.json> [options]
  *
  * Supports dry-run validation, variable overrides, custom timeouts,
  * JSON event output, and strict template checking.
@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const { WorkflowRunner } = require('./core/workflow-runner');
 const { normalizeWorkflow } = require('./pipeline/workflow-normalizer');
 const { validateWorkflow } = require('./pipeline/workflow-validator');
@@ -30,7 +30,7 @@ function printUsage() {
 WebMCP JSON Workflow Runner
 
 Usage:
-  node runner/run.js <workflow.json> [options]
+  node src/runner/run.js <workflow.json> [options]
 
 Options:
   --var KEY=VALUE              Override a workflow variable. Can be repeated.
@@ -45,9 +45,9 @@ Options:
   --help                       Show this help message.
 
 Examples:
-  node runner/run.js workflows/gemini/chat.json --dry-run
-  node runner/run.js workflows/gemini/chat.json --var PROMPT="Hello" --timeout 60000
-  node runner/run.js workflows/facebook/post_text.json --gateway-url http://localhost:7865/api --profile-id profile-A
+  node src/runner/run.js tests/fixtures/example-title-workflow.json --dry-run
+  node src/runner/run.js tests/fixtures/example-title-workflow.json --timeout 60000
+  node src/runner/run.js tests/fixtures/example-title-workflow.json --gateway-url http://localhost:7865/api --profile-id profile-A
 
 Strategy notes:
   strategy: "aria-ref"      Uses getAriaSnapshot, finds a matching ref, then calls clickByRef/typeByRef/hoverByRef/selectByRef.
