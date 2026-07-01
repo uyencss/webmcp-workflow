@@ -13,7 +13,7 @@ The command should wrap the reorganized runner, keep workflow execution outside 
 Primary command:
 
 ```bash
-workflow-dispatcher run <workflow-id-or-path> [options]
+webmcp-workflow run <workflow-id-or-path> [options]
 ```
 
 ## Current Runner Surface
@@ -49,7 +49,7 @@ workflow-dispatcher/
       strategies/aria-ref.js
 ```
 
-`src/runner/run.js` stays as a backward-compatible legacy entrypoint while the primary CLI is `bin/workflow-dispatcher.js`.
+`src/runner/run.js` stays as a backward-compatible legacy entrypoint while the primary user-facing CLI is `webmcp-workflow`, delegated to `bin/workflow-dispatcher.js`.
 
 ## Non-Goals
 
@@ -61,15 +61,15 @@ workflow-dispatcher/
 ## Target CLI Shape
 
 ```bash
-workflow-dispatcher --help
-workflow-dispatcher run <workflow-id-or-path> [options]
-workflow-dispatcher validate <workflow-id-or-path> [options]
-workflow-dispatcher dry-run <workflow-id-or-path> [options]
-workflow-dispatcher list [--json]
-workflow-dispatcher profiles [--gateway <name-or-url>] [--json]
-workflow-dispatcher doctor [--gateway <name-or-url>] [--profile <id-or-alias>] [--json]
-workflow-dispatcher history [--limit 20] [--json]
-workflow-dispatcher daemon [--config dispatcher.config.json]
+webmcp-workflow --help
+webmcp-workflow run <workflow-id-or-path> [options]
+webmcp-workflow validate <workflow-id-or-path> [options]
+webmcp-workflow dry-run <workflow-id-or-path> [options]
+webmcp-workflow list [--json]
+webmcp-workflow profiles [--gateway <name-or-url>] [--json]
+webmcp-workflow doctor [--gateway <name-or-url>] [--profile <id-or-alias>] [--json]
+webmcp-workflow history [--limit 20] [--json]
+webmcp-workflow daemon [--config dispatcher.config.json]
 ```
 
 Common options:
@@ -102,7 +102,7 @@ WEBMCP_PROFILE_ID=<profile-id>
 workflow-dispatcher/
   package.json
   README.md
-  config.example.json
+  tests/fixtures/dispatcher.config.json
   bin/
     workflow-dispatcher.js
   src/
@@ -232,8 +232,8 @@ Profile resolution precedence:
 
 Acceptance:
 
-- [x] `node bin/workflow-dispatcher.js --help` prints root usage.
-- [x] `node bin/workflow-dispatcher.js run path/to/workflow.json --dry-run` works or points to `dry-run`.
+- [x] `webmcp-workflow --help` prints root usage.
+- [x] `webmcp-workflow run path/to/workflow.json --dry-run` works or points to `dry-run`.
 - [x] Unknown command and unknown option return exit code `2`.
 
 ## Phase 2 — Config Loader, Registry, and Profile Resolver
@@ -257,12 +257,12 @@ Acceptance:
 - [x] Add `list` command.
   - [x] Print workflow id, description, path, gateway, profile, and schedule status.
   - [x] Support `--json`.
-- [x] Add `config.example.json`.
+- [x] Add an example dispatcher config fixture.
 
 Acceptance:
 
-- [x] `workflow-dispatcher list --config config.example.json`.
-- [x] `workflow-dispatcher validate <id> --config dispatcher.config.json`.
+- [x] `webmcp-workflow list --config tests/fixtures/dispatcher.config.json`.
+- [x] `webmcp-workflow validate <id> --config dispatcher.config.json`.
 - [x] Invalid config reports exact key path and exits `2`.
 
 ## Phase 3 — Multi-Profile Runner Readiness
@@ -385,7 +385,7 @@ Acceptance:
 
 - [x] Two workflows targeting the same gateway/profile lock do not overlap by default.
 - [x] Stale lock detection reports owner/run id and age.
-- [x] `workflow-dispatcher daemon --config dispatcher.config.json` starts enabled schedules.
+- [x] `webmcp-workflow daemon --config dispatcher.config.json` starts enabled schedules.
 
 ## Phase 8 — Documentation
 
@@ -474,11 +474,11 @@ Acceptance:
 
 ## Definition of Done
 
-- [x] `workflow-dispatcher run <workflow-id>` works from config.
-- [x] `workflow-dispatcher run <workflow.json>` works by path.
-- [x] `workflow-dispatcher validate`, `dry-run`, `list`, `profiles`, `doctor`, and `history` work.
+- [x] `webmcp-workflow run <workflow-id>` works from config.
+- [x] `webmcp-workflow run <workflow.json>` works by path.
+- [x] `webmcp-workflow validate`, `dry-run`, `list`, `profiles`, `doctor`, and `history` work.
 - [x] CLI can target a multi-profile gateway via `--profile` or config profile alias.
-- [x] `workflow-dispatcher daemon` can run scheduled workflows without overlap.
+- [x] `webmcp-workflow daemon` can run scheduled workflows without overlap.
 - [x] Runs produce redacted history and summaries.
 - [x] Gateway failures, profile selection failures, validation failures, workflow failures, and aborts have distinct exit codes.
 - [x] README documents setup and common usage.

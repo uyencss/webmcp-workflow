@@ -1,18 +1,31 @@
 ---
 name: workflow-dispatcher-cli
-description: Run, validate, debug, and smoke-test WebMCP workflow JSON through the local workflow-dispatcher terminal CLI. Use when Codex needs to execute `workflow-dispatcher` commands, run browser workflows via the WebMCP gateway, choose a multi-profile `profileId`, inspect run history, or verify workflow JSON from `workflow-dispatcher/`.
+description: Run, validate, debug, and smoke-test WebMCP workflow JSON through `webmcp-workflow` or the optional `webmcp workflow` bridge. Use when Codex needs to execute workflow commands, run browser workflows via the WebMCP gateway, choose a multi-profile `profileId`, inspect run history, or verify workflow JSON from `workflow-dispatcher/`.
 ---
 
 # Workflow Dispatcher CLI
 
-Use this skill when operating the `workflow-dispatcher` project from a terminal. The CLI lives in the repo root and wraps `src/runner/`:
+Use this skill to run WebMCP workflow JSON from a terminal. Prefer the standalone
+command when the package is installed (globally, via `npx`, or `npm link`):
 
 ```bash
-cd /Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher
-node bin/workflow-dispatcher.js --help
+webmcp-workflow --help
+webmcp-workflow --version
 ```
 
-Prefer `node bin/workflow-dispatcher.js ...` unless the package has been linked with `npm link`.
+When `@gyga-browser/webmcp-browser-automation-kit` is also installed, the same
+runner is reachable through the optional branded bridge:
+
+```bash
+webmcp workflow --help
+```
+
+Inside a local checkout of the `webmcp-automation-kit` monorepo, run the bin
+directly (paths are relative to the repo root):
+
+```bash
+node workflow-dispatcher/bin/workflow-dispatcher.js --help
+```
 
 ## Skill Installation
 
@@ -20,7 +33,7 @@ The source skill lives in `skills/workflow-dispatcher-cli/`. Do not edit provide
 install copies directly. Install or refresh provider copies with:
 
 ```bash
-npm run install:local      # Codex test install + ~/.local/bin/workflow-dispatcher
+npm run install:local      # Codex test install + ~/.local/bin/workflow-dispatcher fallback
 npm run install:codex
 npm run install:claude
 npm run install:gemini
@@ -37,29 +50,28 @@ running installer commands.
 1. Validate the workflow before live execution:
 
    ```bash
-   node bin/workflow-dispatcher.js validate tests/fixtures/minimal-workflow.json
-   node bin/workflow-dispatcher.js dry-run tests/fixtures/example-title-workflow.json --json
-   node bin/workflow-dispatcher.js dry-run example-title --config config.example.json --json
+   webmcp-workflow validate tests/fixtures/minimal-workflow.json
+   webmcp-workflow dry-run tests/fixtures/example-title-workflow.json --json
+   webmcp-workflow dry-run example-title --config dispatcher.config.json --json
    ```
 
-2. Start or verify the WebMCP gateway from the sibling project:
+2. Start or verify the WebMCP gateway (from `@gyga-browser/webmcp-browser-automation-kit`):
 
    ```bash
-   cd /Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/mcp-web-extension
-   npm run gateway
+   webmcp gateway start
+   # or, from a monorepo checkout: npm run gateway --prefix mcp-web-extension
    ```
 
 3. In another terminal, list connected browser profiles:
 
    ```bash
-   cd /Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher
-   node bin/workflow-dispatcher.js profiles
+   webmcp-workflow profiles
    ```
 
 4. If more than one profile is connected, pass `--profile <profileId-or-alias>` on every live run:
 
    ```bash
-   node bin/workflow-dispatcher.js run tests/fixtures/example-title-workflow.json \
+   webmcp-workflow run tests/fixtures/example-title-workflow.json \
      --profile <profileId> \
      --json \
      --history-dir .workflow-runs-real
@@ -68,7 +80,7 @@ running installer commands.
 5. Inspect run artifacts when needed:
 
    ```bash
-   node bin/workflow-dispatcher.js history --history-dir .workflow-runs-real
+   webmcp-workflow history --history-dir .workflow-runs-real
    ```
 
 ## Multi-Profile Rules
@@ -90,7 +102,7 @@ Do not put `profileId` inside workflow step `params`. The CLI resolves profile s
 Use `doctor` to catch ambiguity before running:
 
 ```bash
-node bin/workflow-dispatcher.js doctor --profile <profileId> --json
+webmcp-workflow doctor --profile <profileId> --json
 ```
 
 ## Useful Checks
@@ -110,7 +122,7 @@ npm run test:workflow
 Run a real browser workflow when the gateway and extension are connected:
 
 ```bash
-node bin/workflow-dispatcher.js run tests/fixtures/example-title-workflow.json \
+webmcp-workflow run tests/fixtures/example-title-workflow.json \
   --profile <profileId> \
   --json \
   --history-dir .workflow-runs-real

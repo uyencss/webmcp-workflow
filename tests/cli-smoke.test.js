@@ -2,10 +2,28 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const test = require('node:test');
-const { main } = require('../src/cli');
+const { getCommandName, main } = require('../src/cli');
 
 const ROOT = path.resolve(__dirname, '..');
 const BIN = path.join(ROOT, 'bin/workflow-dispatcher.js');
+
+test('CLI help command name follows the invoked binary or explicit bridge override', () => {
+  const originalArgv1 = process.argv[1];
+  const originalOverride = process.env.WORKFLOW_DISPATCHER_COMMAND_NAME;
+
+  try {
+    delete process.env.WORKFLOW_DISPATCHER_COMMAND_NAME;
+    process.argv[1] = '/usr/local/bin/webmcp-workflow';
+    assert.equal(getCommandName(), 'webmcp-workflow');
+
+    process.env.WORKFLOW_DISPATCHER_COMMAND_NAME = 'webmcp workflow';
+    assert.equal(getCommandName(), 'webmcp workflow');
+  } finally {
+    process.argv[1] = originalArgv1;
+    if (originalOverride === undefined) delete process.env.WORKFLOW_DISPATCHER_COMMAND_NAME;
+    else process.env.WORKFLOW_DISPATCHER_COMMAND_NAME = originalOverride;
+  }
+});
 
 test('CLI dry-run returns JSON validation result', () => {
   const result = spawnSync(process.execPath, [

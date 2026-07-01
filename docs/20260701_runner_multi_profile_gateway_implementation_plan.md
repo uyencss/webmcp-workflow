@@ -178,10 +178,10 @@ Resolution precedence:
 ### CLI commands
 
 ```bash
-workflow-dispatcher profiles [--gateway local] [--json]
-workflow-dispatcher doctor [--gateway local] [--profile personal] [--json]
-workflow-dispatcher run <workflow-id-or-path> --profile personal
-workflow-dispatcher dry-run <workflow-id-or-path> --profile personal
+webmcp-workflow profiles [--gateway local] [--json]
+webmcp-workflow doctor [--gateway local] [--profile personal] [--json]
+webmcp-workflow run <workflow-id-or-path> --profile personal
+webmcp-workflow dry-run <workflow-id-or-path> --profile personal
 ```
 
 `profiles` should call `/health` and print connected profile ids plus friendly metadata when available.

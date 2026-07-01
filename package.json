@@ -1,15 +1,48 @@
 {
-  "name": "workflow-dispatcher",
+  "name": "@gyga-browser/webmcp-workflow",
   "version": "0.1.0",
-  "private": true,
   "description": "CLI for validating and executing WebMCP workflow JSON through a gateway.",
+  "license": "MIT",
+  "author": "uyencss",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uyencss/webmcp-workflow.git"
+  },
+  "homepage": "https://github.com/uyencss/webmcp-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/uyencss/webmcp-workflow/issues"
+  },
+  "keywords": [
+    "webmcp",
+    "workflow",
+    "browser-automation",
+    "cli",
+    "gateway",
+    "mcp"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
+    "webmcp-workflow": "bin/workflow-dispatcher.js",
     "workflow-dispatcher": "bin/workflow-dispatcher.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/install-agent.mjs",
+    "skills/workflow-dispatcher-cli/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node bin/workflow-dispatcher.js",
     "test": "node --test tests/*.test.js",
     "test:workflow": "node tests/run-workflow-smoke.js",
+    "link:local": "npm link",
+    "pack:dry-run": "npm pack --dry-run",
+    "prepublishOnly": "npm test",
     "install:agent": "node scripts/install-agent.mjs",
     "install:local": "node scripts/install-agent.mjs local",
     "install:codex": "node scripts/install-agent.mjs codex",

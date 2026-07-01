@@ -90,7 +90,7 @@ const TARGETS = {
   codex() {
     head('Codex');
     copySkill(join(INSTALL_HOME, '.codex', 'skills', SKILL_NAME));
-    note('Use the CLI from this checkout, or run `npm run install:local` to create ~/.local/bin/workflow-dispatcher.');
+    note('Use `webmcp-workflow` when installed, `webmcp workflow` from the monorepo checkout, or run `npm run install:local` to create the direct ~/.local/bin/workflow-dispatcher fallback.');
   },
 
   copilot() {
@@ -115,7 +115,7 @@ const TARGETS = {
     const dest = join(INSTALL_HOME, '.cursor', 'rules', `${SKILL_NAME}.mdc`);
     writeIfAbsent(dest, [
       '---',
-      'description: Run WebMCP workflow JSON through workflow-dispatcher CLI',
+      'description: Run WebMCP workflow JSON through webmcp-workflow',
       'alwaysApply: false',
       '---',
       '',
@@ -128,7 +128,11 @@ const TARGETS = {
 function reminder() {
   log(`\n${'-'.repeat(64)}`);
   log(`Skill source: ${SKILL_SRC}`);
-  log('Local CLI command:');
+  log('Primary CLI command when installed:');
+  log('  webmcp-workflow --help');
+  log('Monorepo bridge command:');
+  log('  webmcp workflow --help');
+  log('Direct runner fallback:');
   log(`  node ${BIN_SRC} --help`);
   log('For a PATH command in this machine, run:');
   log('  npm run install:local');

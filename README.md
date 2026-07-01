@@ -1,6 +1,6 @@
 # Workflow Dispatcher
 
-`workflow-dispatcher` is a local Node.js CLI for validating and running WebMCP workflow JSON through the WebMCP HTTP gateway.
+`@gyga-browser/webmcp-workflow` is the independent workflow runner for WebMCP. It validates and runs WebMCP workflow JSON through the WebMCP HTTP gateway.
 
 It wraps the existing `src/runner/` engine and supports the gateway's multi-profile request shape:
 
@@ -12,21 +12,37 @@ It wraps the existing `src/runner/` engine and supports the gateway's multi-prof
 
 ## Install
 
-From this directory:
+Install globally from npm and use the standalone command:
 
 ```bash
-npm install
+npm install -g @gyga-browser/webmcp-workflow
+webmcp-workflow --help
+webmcp-workflow --version
+```
+
+Or run it without installing:
+
+```bash
+npx @gyga-browser/webmcp-workflow --help
+```
+
+The package also exposes a `workflow-dispatcher` bin as a compatibility alias.
+
+When installed alongside `@gyga-browser/webmcp-browser-automation-kit`, the
+same runner can also be invoked through the optional branded bridge:
+
+```bash
+webmcp workflow --help
+```
+
+For direct runner development inside a monorepo checkout:
+
+```bash
 node bin/workflow-dispatcher.js --help
 ```
 
-For local development without installing onto PATH:
-
-```bash
-node bin/workflow-dispatcher.js --help
-```
-
-To install the companion skill and a local `workflow-dispatcher` command for
-Codex testing:
+To install the companion skill and a local `workflow-dispatcher` fallback command
+for Codex testing:
 
 ```bash
 npm run install:local
@@ -59,15 +75,15 @@ WEBMCP_GATEWAY_URL=http://localhost:7865/api
 For a multi-profile gateway, discover connected profiles:
 
 ```bash
-workflow-dispatcher profiles
-workflow-dispatcher doctor --profile <profile-id-or-alias>
+webmcp-workflow profiles
+webmcp-workflow doctor --profile <profile-id-or-alias>
 ```
 
 When more than one Chrome profile is connected, pass `--profile` or configure a default profile alias.
 
 ## Config
 
-Copy `config.example.json` to `dispatcher.config.json` and adjust workflow paths/profile aliases.
+Create `dispatcher.config.json` and adjust workflow paths/profile aliases.
 
 ```json
 {
@@ -102,11 +118,11 @@ Profile resolution precedence:
 ## Commands
 
 ```bash
-workflow-dispatcher list --config dispatcher.config.json
-workflow-dispatcher validate example-title --config dispatcher.config.json
-workflow-dispatcher dry-run tests/fixtures/example-title-workflow.json
-workflow-dispatcher run example-title --profile personal
-workflow-dispatcher history --limit 20
+webmcp-workflow list --config dispatcher.config.json
+webmcp-workflow validate example-title --config dispatcher.config.json
+webmcp-workflow dry-run tests/fixtures/example-title-workflow.json
+webmcp-workflow run example-title --profile personal
+webmcp-workflow history --limit 20
 ```
 
 All commands that produce machine-readable output support `--json`.
@@ -128,3 +144,21 @@ Runs write redacted artifacts to `.workflow-runs/<runId>/` by default:
 - `workflow.normalized.json`
 
 Use `--no-history` to disable history for a run.
+
+## Security
+
+- **Workflow JSON is executable input.** `expression` guards and target-based
+  guards run arbitrary JavaScript in the connected page via `evaluateJS`, and
+  steps drive a real, potentially logged-in browser session. Only run workflow
+  files you trust, from sources you control.
+- **The gateway is unauthenticated and should bind to `localhost` only.** Do not
+  expose the WebMCP gateway port to untrusted networks.
+- **History redaction is key-name based.** Fields whose keys match
+  `token`/`password`/`cookie`/`authorization`/`apiKey` (configurable via
+  `defaults.redactKeys`) are masked in run artifacts. Secrets embedded inside
+  free-form response text are not automatically redacted — review artifacts
+  before sharing.
+
+## License
+
+[MIT](LICENSE) © uyencss

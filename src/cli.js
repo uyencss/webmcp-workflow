@@ -1,4 +1,6 @@
 const fs = require('fs');
+const path = require('path');
+const { version: VERSION } = require('../package.json');
 const { CliError, toErrorPayload } = require('./errors');
 const { writeJson } = require('./output');
 const { runCommand } = require('./commands/run-command');
@@ -21,11 +23,24 @@ const COMMANDS = {
   daemon: daemonCommand,
 };
 
-function printRootHelp(stdout = process.stdout) {
+function getCommandName() {
+  if (process.env.WORKFLOW_DISPATCHER_COMMAND_NAME) {
+    return process.env.WORKFLOW_DISPATCHER_COMMAND_NAME;
+  }
+
+  const invokedName = path.basename(process.argv[1] || '');
+  if (invokedName && invokedName !== 'workflow-dispatcher.js') {
+    return invokedName;
+  }
+
+  return 'workflow-dispatcher';
+}
+
+function printRootHelp(stdout = process.stdout, commandName = getCommandName()) {
   stdout.write(`Workflow Dispatcher CLI
 
 Usage:
-  workflow-dispatcher <command> [options]
+  ${commandName} <command> [options]
 
 Commands:
   run <workflow-id-or-path>       Execute a workflow JSON file or configured workflow id
@@ -51,16 +66,17 @@ Common options:
   --strict                        Treat unknown template variables as validation errors
   --allow-unknown-command         Allow passthrough gateway commands not in catalog
   --help                          Show help
+  --version                       Print the CLI version
 
 Environment:
   WEBMCP_GATEWAY_URL              Default gateway /api URL
   WEBMCP_PROFILE_ID               Default profile id for multi-profile gateways
 
 Examples:
-  workflow-dispatcher doctor
-  workflow-dispatcher profiles --gateway local
-  workflow-dispatcher dry-run tests/fixtures/example-title-workflow.json
-  workflow-dispatcher run example-title --config config.example.json --profile personal
+  ${commandName} doctor
+  ${commandName} profiles --gateway local
+  ${commandName} dry-run tests/fixtures/example-title-workflow.json
+  ${commandName} run example-title --config dispatcher.config.json --profile personal
 `);
 }
 
@@ -126,6 +142,10 @@ function parseArgs(args, cwd = process.cwd()) {
 
     if (arg === '--help' || arg === '-h') {
       result.options.help = true;
+      continue;
+    }
+    if (arg === '--version' || arg === '-v') {
+      result.options.version = true;
       continue;
     }
     if (arg === '--json') {
@@ -245,6 +265,11 @@ async function main(args = process.argv.slice(2), io = {}) {
     return error.exitCode || 2;
   }
 
+  if (parsed.options.version) {
+    stdout.write(`${VERSION}\n`);
+    return 0;
+  }
+
   if (!parsed.command || parsed.options.help) {
     printRootHelp(stdout);
     return 0;
@@ -288,6 +313,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  getCommandName,
   main,
   parseArgs,
   printRootHelp,
