@@ -13,11 +13,9 @@
 import {
   cpSync,
   existsSync,
-  lstatSync,
+  chmodSync,
   mkdirSync,
-  readlinkSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
@@ -48,22 +46,19 @@ function copySkill(dest) {
 
 function installLocalBin() {
   const binDir = join(INSTALL_HOME, '.local', 'bin');
-  const linkPath = join(binDir, 'workflow-dispatcher');
+  const binPath = join(binDir, 'workflow-dispatcher');
   mkdirSync(binDir, { recursive: true });
 
-  if (existsSync(linkPath)) {
-    const stat = lstatSync(linkPath);
-    if (stat.isSymbolicLink() && readlinkSync(linkPath) === BIN_SRC) {
-      ok(`CLI symlink already exists -> ${linkPath}`);
-      return;
-    }
-    note(`${linkPath} already exists; not overwriting. Run directly with:`);
-    log(`  node ${BIN_SRC} --help`);
-    return;
-  }
+  const content = [
+    '#!/bin/sh',
+    `exec node ${JSON.stringify(BIN_SRC)} "$@"`,
+    '',
+  ].join('\n');
 
-  symlinkSync(BIN_SRC, linkPath);
-  ok(`CLI symlink created -> ${linkPath}`);
+  rmSync(binPath, { force: true });
+  writeFileSync(binPath, content, { mode: 0o755 });
+  chmodSync(binPath, 0o755);
+  ok(`CLI wrapper installed -> ${binPath}`);
 }
 
 function writeIfAbsent(file, content) {
