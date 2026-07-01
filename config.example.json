@@ -1,0 +1,42 @@
+{
+  "defaultGateway": "local",
+  "gateways": {
+    "local": {
+      "apiUrl": "http://localhost:7865/api",
+      "healthUrl": "http://localhost:7865/health",
+      "healthTimeoutMs": 3000,
+      "defaultProfile": "",
+      "profiles": {
+        "personal": "replace-with-profile-id",
+        "work": "replace-with-profile-id"
+      }
+    }
+  },
+  "defaults": {
+    "timeoutMs": 30000,
+    "strict": false,
+    "allowUnknownCommand": false,
+    "historyDir": ".workflow-runs",
+    "redactKeys": ["token", "password", "cookie", "authorization", "apiKey"]
+  },
+  "workflows": {
+    "gemini-generate-image": {
+      "path": ".examples/workflows/gemini/generate_image.json",
+      "gateway": "local",
+      "description": "Generate an image in Gemini through WebMCP",
+      "variables": {
+        "PROMPT": "A minimal product photo"
+      },
+      "timeoutMs": 60000,
+      "queue": {
+        "lockKey": "gateway:local:profile:auto",
+        "allowOverlap": false
+      },
+      "schedule": {
+        "enabled": false,
+        "intervalMs": 300000,
+        "maxConsecutiveFailures": 5
+      }
+    }
+  }
+}

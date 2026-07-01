@@ -1,0 +1,24 @@
+{
+  "defaultGateway": "local",
+  "gateways": {
+    "local": {
+      "apiUrl": "http://localhost:7865/api",
+      "healthUrl": "http://localhost:7865/health",
+      "profiles": {
+        "personal": "profile-A"
+      }
+    }
+  },
+  "defaults": {
+    "timeoutMs": 30000,
+    "historyDir": ".workflow-runs-test"
+  },
+  "workflows": {
+    "minimal": {
+      "path": "minimal-workflow.json",
+      "gateway": "local",
+      "profile": "personal",
+      "description": "Minimal test workflow"
+    }
+  }
+}

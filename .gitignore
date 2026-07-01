@@ -1,0 +1,17 @@
+.DS_Store
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.env
+.env.*
+!.env.example
+
+.workflow-runs/
+.workflow-runs-*/
+coverage/
+dist/
+tmp/
+*.log

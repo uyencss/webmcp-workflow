@@ -1,0 +1,12 @@
+{
+  "id": "minimal",
+  "name": "Minimal Ping Workflow",
+  "version": "1.0",
+  "steps": [
+    {
+      "id": "ping",
+      "command": "ping",
+      "params": {}
+    }
+  ]
+}
