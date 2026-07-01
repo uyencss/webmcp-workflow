@@ -254,6 +254,51 @@ while (!meta.last && page < MAX_PAGES);
 return { key: kw, total: meta.totalElements, pagesFetched: page, finished: meta.last, items };
 ```
 
+### Unknown iteration count — the "while" case (do NOT add a runner `while`)
+
+When you don't know how many pages/items exist up front ("loop until there are
+no more"), that is semantically a `while`. **The runner has no `while`, and you
+don't need one.** Handle it two ways, together:
+
+1. **Discover the bound, then feed `forEach` dynamically.** `forEach.items`
+   accepts `"{{VAR}}"` that resolves **at runtime** from an earlier step's
+   `captureAs`. So add a *discovery* step that reads the real bound (the
+   last-page link, an API `totalPages`/`totalElements`, a result count),
+   computes the item/chunk list, and captures it — then `forEach` iterates that
+   computed list. **Never hardcode a page count.**
+2. **Add a page-JS sentinel.** Inside the loop body, stop when a page comes back
+   empty (`items.length === 0` / no "next"). Overshooting the discovered bound is
+   then harmless, and slow growth between discovery and fetch self-corrects.
+
+Why not a runner-level `while`: the bound is usually *discoverable* (fix it with
+step 1), and "loop until empty" belongs in **page-JS** (fix it with step 2). A
+runner `while` would only add a condition round-trip per iteration and duplicate
+what JS already does. `parallel` is also rejected (the runner has a single
+mutable active tab).
+
+```json
+{ "id": "discover", "type": "command", "command": "evaluateJS", "captureAs": "DISCOVERY",
+  "params": { "code": "return (async () => { const r = await fetch('/list?page=1'); const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); const nums = [...doc.querySelectorAll('a[href*=\"page=\"]')].map(a => { const m = (a.getAttribute('href')||'').match(/page=(\\d+)/); return m ? +m[1] : 0; }); const lastPage = Math.min(Math.max(1, ...nums), 2000); const CHUNK = 20, starts = []; for (let s = 1; s <= lastPage; s += CHUNK) starts.push(s); return { lastPage, chunkSize: CHUNK, chunkStarts: starts }; })();" } },
+{ "id": "each-chunk", "type": "forEach",
+  "forEach": { "items": "{{DISCOVERY.chunkStarts}}", "as": "startPage", "collectAs": "ALL" },
+  "command": "evaluateJS", "captureAs": "CHUNK", "timeoutMs": 60000,
+  "params": { "code": "return (async () => { const start = {{startPage}}, PAGES = {{DISCOVERY.chunkSize}}; const items = []; for (let p = start; p < start + PAGES; p++) { const r = await fetch('/list?page=' + p); const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); const rows = doc.querySelectorAll('.item'); if (rows.length === 0) break; /* sentinel: past the end */ for (const el of rows) items.push(/* parse(el) */); } return { start, count: items.length, items }; })();" } }
+```
+
+> `forEach.items` may be a dot-path template (`"{{DISCOVERY.chunkStarts}}"`) —
+> the validator accepts it as long as `DISCOVERY` is captured by an **earlier**
+> step.
+
+### Server-rendered sites (no JSON API)
+
+If the list is server-rendered HTML paginated by `?page=N` (classic ASP.NET/PHP),
+you still stay in page-JS: `fetch('/list?page=N')` returns **HTML**, so parse it
+with `new DOMParser().parseFromString(html, 'text/html')` and query the parsed
+document. This keeps pagination in one `evaluateJS` (no tab navigation per page).
+Gotcha: some sites **shadow `window.URL`** — parse page numbers with a regex on
+the `href` string, not `new URL(...)`. Full example:
+[`thongtin_doanhnghiep_hue.json`](../../.examples/workflows/mobifone/thongtin_doanhnghiep_hue.json).
+
 ---
 
 ## 6. Reading pages fast: prefer `getPageText`
@@ -309,18 +354,21 @@ containers still beats a snapshot.
    data, `aria-ref` to interact. Facebook → `getPageText`.
 3. **Size the loop unit** (§5): one item = one command that fits `timeoutMs`;
    pagination inside page-JS with `MAX_PAGES`.
-4. **Return clean data**: arrays of plain objects; dedupe (`Set` on a stable id)
+4. **Unknown count?** (§5) Don't hardcode the bound and don't reach for a
+   runner `while`: a discovery step reads the real bound → `forEach.items` via
+   `{{VAR}}`, plus an empty-page sentinel in the body.
+5. **Return clean data**: arrays of plain objects; dedupe (`Set` on a stable id)
    and sort in a final `merge` step.
-5. **Interpolation types** (§3): exact `{{ }}` for arrays/numbers; wrap strings
+6. **Interpolation types** (§3): exact `{{ }}` for arrays/numbers; wrap strings
    in quotes inside code.
-6. **evaluateJS returns** (§4): explicit `return` in multi-statement bodies.
-7. **Robustness**: wait for async globals (`waitG`); set per-step `timeoutMs`
+7. **evaluateJS returns** (§4): explicit `return` in multi-statement bodies.
+8. **Robustness**: wait for async globals (`waitG`); set per-step `timeoutMs`
    and `retryPolicy` on network-bound steps; make the target URL the page that
    actually loads what you need (e.g. the search page, not the homepage — some
    globals like `grecaptcha` load per-route).
-8. **Verify before run**: `validate` → `dry-run --json` → `run --profile <id>`.
+9. **Verify before run**: `validate` → `dry-run --json` → `run --profile <id>`.
    When >1 Chrome profile is connected, `--profile` is required.
-9. **Security**: workflow JSON is **executable input** — it runs arbitrary JS in
+10. **Security**: workflow JSON is **executable input** — it runs arbitrary JS in
    a real logged-in browser. Only author/run files you trust; never embed
    secrets in `code` (history redaction is key-name based, not content-based).
 
@@ -337,6 +385,8 @@ containers still beats a snapshot.
 | `template references unknown variable` | Reference a var/`captureAs`/`collectAs` that is defined *earlier* (order matters). |
 | One giant `evaluateJS` times out | Split by item; paginate with `MAX_PAGES`; raise `timeoutMs`. |
 | Selector breaks on SPA | Use `getAriaSnapshot` + `clickByRef`, or the site API. |
+| Hardcoded page/item count misses new data as the site grows | Don't hardcode the bound. Add a discovery step that reads the real bound and feed `forEach.items` via `{{VAR}}`; add an empty-page sentinel (§5). |
+| `URL is not a constructor` inside `evaluateJS` | The site shadows `window.URL`. Parse page numbers with a regex on the `href` string instead of `new URL(...)`. |
 
 ---
 
