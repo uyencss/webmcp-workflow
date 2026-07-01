@@ -14,6 +14,24 @@ node bin/workflow-dispatcher.js --help
 
 Prefer `node bin/workflow-dispatcher.js ...` unless the package has been linked with `npm link`.
 
+## Skill Installation
+
+The source skill lives in `skills/workflow-dispatcher-cli/`. Do not edit provider
+install copies directly. Install or refresh provider copies with:
+
+```bash
+npm run install:local      # Codex test install + ~/.local/bin/workflow-dispatcher
+npm run install:codex
+npm run install:claude
+npm run install:gemini
+npm run install:antigravity
+npm run install:cursor
+npm run install:copilot
+```
+
+For safe tests, set `WORKFLOW_DISPATCHER_INSTALL_HOME` to a temp directory before
+running installer commands.
+
 ## Core Workflow
 
 1. Validate the workflow before live execution:

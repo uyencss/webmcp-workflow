@@ -16,15 +16,37 @@ From this directory:
 
 ```bash
 npm install
-npm link
-workflow-dispatcher --help
+node bin/workflow-dispatcher.js --help
 ```
 
-For local development without linking:
+For local development without installing onto PATH:
 
 ```bash
 node bin/workflow-dispatcher.js --help
 ```
+
+To install the companion skill and a local `workflow-dispatcher` command for
+Codex testing:
+
+```bash
+npm run install:local
+workflow-dispatcher --help
+```
+
+Provider-specific skill installs:
+
+```bash
+npm run install:codex
+npm run install:claude
+npm run install:gemini
+npm run install:antigravity
+npm run install:cursor
+npm run install:copilot
+```
+
+The source skill lives in `skills/workflow-dispatcher-cli/`. The installer
+copies it into each provider's global skill/rules directory, following the same
+pattern as `mcp-web-extension/scripts/install-agent.mjs`.
 
 ## Gateway
 

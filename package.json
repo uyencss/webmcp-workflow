@@ -9,7 +9,15 @@
   "scripts": {
     "start": "node bin/workflow-dispatcher.js",
     "test": "node --test tests/*.test.js",
-    "test:workflow": "node tests/run-workflow-smoke.js"
+    "test:workflow": "node tests/run-workflow-smoke.js",
+    "install:agent": "node scripts/install-agent.mjs",
+    "install:local": "node scripts/install-agent.mjs local",
+    "install:codex": "node scripts/install-agent.mjs codex",
+    "install:claude": "node scripts/install-agent.mjs claude",
+    "install:gemini": "node scripts/install-agent.mjs gemini",
+    "install:antigravity": "node scripts/install-agent.mjs antigravity",
+    "install:cursor": "node scripts/install-agent.mjs cursor",
+    "install:copilot": "node scripts/install-agent.mjs copilot"
   },
   "engines": {
     "node": ">=18"
