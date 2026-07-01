@@ -59,8 +59,8 @@ Environment:
 Examples:
   workflow-dispatcher doctor
   workflow-dispatcher profiles --gateway local
-  workflow-dispatcher dry-run workflows/gemini/generate_image.json
-  workflow-dispatcher run gemini-generate-image --profile personal --var PROMPT="hello"
+  workflow-dispatcher dry-run tests/fixtures/example-title-workflow.json
+  workflow-dispatcher run example-title --config config.example.json --profile personal
 `);
 }
 

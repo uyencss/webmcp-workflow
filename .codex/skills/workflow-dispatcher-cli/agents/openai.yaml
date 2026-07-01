@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Dispatcher CLI"
+  short_description: "Run WebMCP workflow JSON from terminal"
+  default_prompt: "Use $workflow-dispatcher-cli to validate and run a WebMCP workflow JSON through the workflow-dispatcher terminal CLI."

@@ -20,14 +20,12 @@
     "redactKeys": ["token", "password", "cookie", "authorization", "apiKey"]
   },
   "workflows": {
-    "gemini-generate-image": {
-      "path": ".examples/workflows/gemini/generate_image.json",
+    "example-title": {
+      "path": "tests/fixtures/example-title-workflow.json",
       "gateway": "local",
-      "description": "Generate an image in Gemini through WebMCP",
-      "variables": {
-        "PROMPT": "A minimal product photo"
-      },
-      "timeoutMs": 60000,
+      "description": "Open example.com and read the page title",
+      "variables": {},
+      "timeoutMs": 30000,
       "queue": {
         "lockKey": "gateway:local:profile:auto",
         "allowOverlap": false

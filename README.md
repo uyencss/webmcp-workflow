@@ -60,8 +60,8 @@ Copy `config.example.json` to `dispatcher.config.json` and adjust workflow paths
     }
   },
   "workflows": {
-    "gemini-generate-image": {
-      "path": ".examples/workflows/gemini/generate_image.json",
+    "example-title": {
+      "path": "tests/fixtures/example-title-workflow.json",
       "gateway": "local",
       "profile": "personal"
     }
@@ -81,9 +81,9 @@ Profile resolution precedence:
 
 ```bash
 workflow-dispatcher list --config dispatcher.config.json
-workflow-dispatcher validate gemini-generate-image --config dispatcher.config.json
-workflow-dispatcher dry-run workflows/gemini/generate_image.json
-workflow-dispatcher run gemini-generate-image --profile personal --var PROMPT="hello"
+workflow-dispatcher validate example-title --config dispatcher.config.json
+workflow-dispatcher dry-run tests/fixtures/example-title-workflow.json
+workflow-dispatcher run example-title --profile personal
 workflow-dispatcher history --limit 20
 ```
 
