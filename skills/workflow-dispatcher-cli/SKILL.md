@@ -73,14 +73,13 @@ running installer commands.
    ```bash
    webmcp-workflow run tests/fixtures/example-title-workflow.json \
      --profile <profileId> \
-     --json \
-     --history-dir .workflow-runs-real
+     --json
    ```
 
 5. Inspect run artifacts when needed:
 
    ```bash
-   webmcp-workflow history --history-dir .workflow-runs-real
+   webmcp-workflow history
    ```
 
 ## Run History Location
@@ -90,11 +89,11 @@ By default, run artifacts are written to the shared WebMCP kit home:
 launcher). Resolution order for the home root is `WEBMCP_HOME` >
 `WEBMCP_DATA_DIR` (back-compat alias) > `~/.webmcp`.
 
-Override the history location per run with `--history-dir <path>` or per project
-with `defaults.historyDir` in `dispatcher.config.json` (a relative value resolves
-against the config/cwd). The `--history-dir .workflow-runs-real` examples above
-are explicit overrides for smoke tests; omit the flag to write to the default
-`~/.webmcp/workflow-runs`.
+Only override the history location when the user explicitly asks for it: use
+`--history-dir <path>` per run or `defaults.historyDir` in `dispatcher.config.json`
+per project (a relative value resolves against the config/cwd). For example,
+`--history-dir .workflow-runs-real` is an explicit in-repo smoke-test override;
+omit the flag to write to the default `~/.webmcp/workflow-runs`.
 
 ## Multi-Profile Rules
 
@@ -137,8 +136,7 @@ Run a real browser workflow when the gateway and extension are connected:
 ```bash
 webmcp-workflow run tests/fixtures/example-title-workflow.json \
   --profile <profileId> \
-  --json \
-  --history-dir .workflow-runs-real
+  --json
 ```
 
 Expected successful real-browser result:

@@ -1,6 +1,6 @@
 {
   "name": "@gyga-browser/webmcp-workflow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "CLI for validating and executing WebMCP workflow JSON through a gateway.",
   "license": "MIT",
   "author": "uyencss",

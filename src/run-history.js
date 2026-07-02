@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getDefaultHistoryDir } = require('./home');
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -10,7 +11,7 @@ function resolveHistoryDir(historyDir, baseDir = process.cwd()) {
 }
 
 function createRunHistory(options) {
-  const historyRoot = resolveHistoryDir(options.historyDir || '.workflow-runs', options.baseDir);
+  const historyRoot = resolveHistoryDir(options.historyDir || getDefaultHistoryDir(), options.baseDir);
   const runDir = path.join(historyRoot, options.runId);
   ensureDir(runDir);
   return {

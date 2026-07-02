@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
@@ -53,4 +54,22 @@ test('default history dir is always absolute (cross-platform)', () => {
     const { getDefaultHistoryDir } = loadFresh();
     assert.equal(path.isAbsolute(getDefaultHistoryDir()), true);
   });
+});
+
+test('createRunHistory fallback uses the shared default history dir', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'webmcp-home-'));
+
+  try {
+    withEnv({ WEBMCP_HOME: tmpHome, WEBMCP_DATA_DIR: undefined }, () => {
+      delete require.cache[require.resolve('../src/run-history')];
+      const { createRunHistory } = require('../src/run-history');
+      const history = createRunHistory({ runId: 'fallback-test' });
+
+      assert.equal(history.historyRoot, path.join(tmpHome, 'workflow-runs'));
+      assert.equal(history.runDir, path.join(tmpHome, 'workflow-runs', 'fallback-test'));
+    });
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+    delete require.cache[require.resolve('../src/run-history')];
+  }
 });
