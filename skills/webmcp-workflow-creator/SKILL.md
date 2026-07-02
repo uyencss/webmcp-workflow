@@ -13,8 +13,9 @@ A workflow drives a real logged-in Chrome tab through the WebMCP gateway. Steps
 run **sequentially**; each step is one gateway command (or one strategy, or a
 `forEach` loop). Output of one step feeds later steps via `{{templates}}`.
 
-> **Golden path:** design → `validate` → `dry-run` → `run` against one profile.
-> Never ship a workflow you have not at least `dry-run`.
+> **Golden path:** design → write the **playbook** → `validate` → `dry-run` →
+> `run` against one profile. Never ship a workflow you have not at least
+> `dry-run`, and never ship one without a paired playbook (see §11).
 
 ---
 
@@ -371,6 +372,10 @@ containers still beats a snapshot.
 10. **Security**: workflow JSON is **executable input** — it runs arbitrary JS in
    a real logged-in browser. Only author/run files you trust; never embed
    secrets in `code` (history redaction is key-name based, not content-based).
+11. **Ship a playbook** (§11): author the sibling `<name>.playbook.md` alongside
+   the JSON and set the `playbook` field (or rely on convention naming). Capture
+   the probe-phase knowledge that doesn't fit a step — API shapes, alternate
+   paths, traps, hard identifiers, verification criteria.
 
 ---
 
@@ -429,6 +434,65 @@ containers still beats a snapshot.
 ```
 
 See runnable examples under
-[`.examples/workflows/`](../../.examples/workflows/) (mobifone, facebook, gemini)
-and the API rewrite in
-[`theo_doi_dau_thau_v2.json`](../../.examples/workflows/mobifone/theo_doi_dau_thau_v2.json).
+[`.examples/workflows/`](../../.examples/workflows/) (facebook, gemini) and their
+paired playbooks (`post_text.playbook.md`, `generate_image.playbook.md`).
+
+---
+
+## 11. Every workflow ships with a playbook
+
+The JSON is the **fast, deterministic path** — but it goes static and brittle:
+selectors drift, popups appear, module ids change. The **playbook** is the
+recovery path: a sibling markdown file an AI agent reads (via
+`webmcp-workflow handoff`) to finish the task live when the JSON fails, then
+patch the JSON so the next run is deterministic again.
+
+**Author the JSON and the playbook together.** During the probe phase you learn
+things that don't fit a JSON step — the API shape, alternate selectors, the
+"two similar targets" trap, why a wait is 6s, which id is the real target.
+Today that knowledge is thrown away after you write the JSON. The playbook is
+where it persists.
+
+### File convention
+
+Place `<workflow-basename>.playbook.md` next to the JSON, and either set the
+`playbook` field (preferred — discoverable) or rely on the convention name:
+
+```jsonc
+{ "id": "my-workflow", "playbook": "./my_workflow.playbook.md", ... }
+```
+
+The runner never executes a playbook; it only reads it into the handoff package.
+A workflow without a playbook still runs — but ship one anyway.
+
+### What the playbook must contain
+
+Start from [`playbook-template.md`](./playbook-template.md). Full spec:
+[`docs/playbook-format.md`](../../docs/playbook-format.md). Mandatory sections:
+
+- **Frontmatter**: `workflowId` (== JSON `id`), `workflowVersion`, `updated`,
+  `risk` (`outward-facing` | `read-only`).
+- **Goal** — what "done" looks like, phrased so an agent can *verify* it.
+- **Preconditions** — login/profile/URL assumptions.
+- **Step intents** — one line per JSON step **id**: intent + expected result +
+  fallback hint.
+- **Verification** — concrete, checkable success criteria (the agent must not
+  claim success without them).
+
+For `risk: outward-facing` workflows (sending, posting, submitting, paying) two
+more sections are **mandatory**:
+
+- **Hard identifiers** — values the agent must use verbatim and never guess
+  (conversation ids, endpoints, recipient ids). The agent may change *how* it
+  reaches the goal, never these *what* values. This is the guardrail against
+  acting on the wrong target (e.g. two similarly-named chats).
+- **Never do** — explicit prohibitions (don't send unconfirmed, don't retry a
+  send more than once, don't touch any entity outside the hard identifiers).
+
+### Rules
+
+- No secrets in the playbook (same as JSON — redaction is key-name based).
+- Reference real JSON step ids in Step intents so handoff aligns failures to
+  intents.
+- After any recovery, patch the JSON with what worked and bump the playbook's
+  `updated`/`workflowVersion`.

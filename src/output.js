@@ -23,6 +23,13 @@ function printDryRun(stdout, report) {
   stdout.write(`Version: ${report.workflow.version}\n`);
   stdout.write(`Gateway: ${report.gateway.name || report.gateway.apiUrl}\n`);
   stdout.write(`Profile: ${report.profile.profileAlias || report.profile.profileId || '(auto/single profile)'}\n`);
+  if (report.playbook) {
+    if (report.playbook.path) {
+      stdout.write(`Playbook: ${report.playbook.path} (${report.playbook.exists ? 'found' : 'MISSING'}, ${report.playbook.source})\n`);
+    } else {
+      stdout.write('Playbook: none\n');
+    }
+  }
   stdout.write(`Steps: ${report.steps.length}\n`);
   stdout.write(`Default timeout: ${report.settings.defaultTimeout}ms\n\n`);
   printValidation(stdout, report.validation);

@@ -5,6 +5,33 @@ All notable changes to `@gyga-browser/webmcp-workflow` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 - 2026-07-02
+
+### Added
+
+- **Playbooks & agentic recovery.** A workflow can now ship a paired
+  `<name>.playbook.md` describing the task's goal, hard identifiers, verification
+  criteria, and prohibitions — the "why" and guardrails the JSON cannot express.
+  Playbooks are fully opt-in; workflows without one run unchanged.
+  - New optional top-level `playbook` field on workflow JSON (resolved relative
+    to the workflow file), with a convention fallback to the sibling
+    `<basename>.playbook.md`.
+  - New `webmcp-workflow handoff <runId|latest>` command that assembles a single
+    AI-readable recovery package: the failure, progress so far, the remaining
+    steps, and the full playbook — all redacted. Supports `--json`.
+  - A failed `run --json` now includes a `handoff` block (`hint`, `runId`,
+    `playbookFound`) pointing at the next move.
+  - `dry-run` reports the resolved playbook; `validate`/`dry-run` warn (never
+    error) when an explicit `playbook` field points at a missing file.
+  - Run `summary.json` records `playbook` metadata; `history` index tracks a
+    `playbook` flag per run.
+  - `docs/playbook-format.md` spec and
+    `skills/webmcp-workflow-creator/playbook-template.md` template; the creator
+    skill now authors JSON + playbook together, and the CLI skill documents the
+    recovery loop.
+  - Reserved `defaults.agentFallback` config block (shape-validated, not yet
+    executed) for a future headless-agent fallback mode.
+
 ## 0.3.1 - 2026-07-02
 
 ### Fixed

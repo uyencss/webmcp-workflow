@@ -95,6 +95,48 @@ per project (a relative value resolves against the config/cwd). For example,
 `--history-dir .workflow-runs-real` is an explicit in-repo smoke-test override;
 omit the flag to write to the default `~/.webmcp/workflow-runs`.
 
+## Recovery Loop (when a run fails)
+
+A workflow may ship with a **playbook** — a sibling `<name>.playbook.md` that
+describes the task's goal, hard identifiers, verification criteria, and
+prohibitions. When a run fails, use the playbook to finish the task live instead
+of giving up. A failed `run --json` already tells you the next move via its
+`handoff` block (`hint`, `runId`, `playbookFound`).
+
+1. **Pull the handoff package** for the failed run:
+
+   ```bash
+   webmcp-workflow handoff latest        # or: handoff <runId>
+   ```
+
+   It prints, in one blob: the failure (which step, which error), progress so far
+   (completed steps + captured variables, redacted), the **remaining steps**, and
+   the **full playbook**.
+
+2. **Read the playbook. Its Hard identifiers and Never-do sections are binding.**
+   You may change *how* you reach the goal (selectors, aria-ref, vision), never
+   the *what* (conversation ids, endpoints, recipients, the message body).
+
+3. **Continue the remaining steps live** via the `webmcp-browser-automation`
+   skill against the **same gateway and profile** shown in the package.
+
+4. **Verify** against the playbook's Verification section. Never declare success
+   without satisfying it (e.g. confirm a message's `data-qid` matches the target
+   conversation id).
+
+5. **Self-heal:** patch the workflow JSON with the durable fix (new selector,
+   longer wait, updated module id), then `validate` + `dry-run`, and bump the
+   playbook's `updated`/`workflowVersion`.
+
+6. **Respect stop conditions.** If the playbook forbids proceeding (login
+   required, target id unconfirmable, a Never-do would be violated), STOP and
+   report — do not improvise around a prohibition, especially for outward-facing
+   actions (sending, posting, submitting).
+
+If a failed run has `playbookFound: false`, recovery is riskier: do not perform
+outward-facing actions without an explicit target confirmation, and consider
+authoring a playbook (see the `webmcp-workflow-creator` skill) once recovered.
+
 ## Multi-Profile Rules
 
 The gateway accepts `profileId` as a top-level `/api` field:

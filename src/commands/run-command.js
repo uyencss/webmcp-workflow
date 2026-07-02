@@ -28,7 +28,17 @@ async function runCommand(args, context) {
     history: options.history !== false,
   });
 
-  if (options.json) writeJson(stdout, { ok: result.exitCode === 0, summary: result.summary, history: result.history });
+  if (options.json) {
+    const payload = { ok: result.exitCode === 0, summary: result.summary, history: result.history };
+    if (result.exitCode !== 0 && result.summary?.runId) {
+      payload.handoff = {
+        hint: `${context.commandName || 'webmcp-workflow'} handoff ${result.summary.runId}`,
+        runId: result.summary.runId,
+        playbookFound: Boolean(result.summary.playbook?.exists),
+      };
+    }
+    writeJson(stdout, payload);
+  }
   return result.exitCode;
 }
 

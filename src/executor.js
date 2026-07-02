@@ -13,6 +13,21 @@ const { EventLogger } = require('./event-logger');
 const { createRunHistory, writeJson, appendJsonLine } = require('./run-history');
 const { redact } = require('./redaction');
 
+/**
+ * When a workflow explicitly declares a `playbook` field that points at a
+ * missing file, surface it as a non-fatal validation warning. A convention
+ * miss (no field, no sibling file) is silent — playbooks are opt-in.
+ *
+ * @param {{ warnings: string[] }} validation
+ * @param {{ path: string|null, source: string|null, exists: boolean }} [playbook]
+ */
+function appendPlaybookWarning(validation, playbook) {
+  if (playbook && playbook.source === 'field' && !playbook.exists) {
+    validation.warnings.push(`Playbook file not found: ${playbook.path}`);
+  }
+  return validation;
+}
+
 function statusToExitCode(summary) {
   if (!summary) return 1;
   if (summary.status === 'completed' || summary.status === 'completed_with_errors') return 0;
@@ -82,9 +97,11 @@ function buildDryRunReport(resolved) {
     allowUnknownCommand: resolved.allowUnknownCommand,
     runtimeVariables: resolved.variables,
   });
+  appendPlaybookWarning(validation, resolved.playbook);
 
   return {
     workflowFile: resolved.workflowFile,
+    playbook: resolved.playbook || { path: null, source: null, exists: false },
     workflow: {
       id: normalized.id,
       name: normalized.name,
@@ -132,7 +149,14 @@ function validateResolvedWorkflow(resolved) {
     allowUnknownCommand: resolved.allowUnknownCommand,
     runtimeVariables: resolved.variables,
   });
+  appendPlaybookWarning(validation, resolved.playbook);
   return { normalized, validation };
+}
+
+/** Compact playbook descriptor persisted into run summaries. */
+function playbookSummary(resolved) {
+  const playbook = resolved.playbook || { path: null, source: null, exists: false };
+  return { path: playbook.path, source: playbook.source, exists: Boolean(playbook.exists) };
 }
 
 async function executeWorkflow(resolved, options = {}) {
@@ -159,6 +183,8 @@ async function executeWorkflow(resolved, options = {}) {
         details: validation.errors,
       },
       warnings: validation.warnings,
+      workflowFile: resolved.workflowFile,
+      playbook: playbookSummary(resolved),
     };
     if (history) writeJson(history.summaryFile, redact(summary, resolved.redactKeys));
     return { summary, exitCode: 2, validation, history };
@@ -198,6 +224,7 @@ async function executeWorkflow(resolved, options = {}) {
   const enrichedSummary = {
     ...summary,
     workflowFile: resolved.workflowFile,
+    playbook: playbookSummary(resolved),
     gateway: {
       name: resolved.gateway.name,
       apiUrl: resolved.gateway.apiUrl,
@@ -217,6 +244,7 @@ async function executeWorkflow(resolved, options = {}) {
       endedAt: new Date().toISOString(),
       duration: safeSummary.duration,
       runDir: path.relative(history.historyRoot, history.runDir),
+      playbook: playbookSummary(resolved).exists,
     });
   }
 

@@ -40,6 +40,43 @@ function loadWorkflowFile(inputPath, baseDir) {
   };
 }
 
+/**
+ * Resolve the recovery playbook that pairs with a workflow file.
+ *
+ * Resolution order:
+ *   1. Explicit `workflow.playbook` field, resolved relative to the workflow
+ *      file's directory (source: "field").
+ *   2. Convention sibling `<basename>.playbook.md` next to the workflow file
+ *      (source: "convention").
+ *   3. None (source: null).
+ *
+ * The playbook is never required; a missing file is reported via `exists`
+ * rather than throwing, so `run`/`validate`/`dry-run` stay fully backward
+ * compatible for workflows that ship without one.
+ *
+ * @param {string} workflowFile  - Absolute path to the resolved workflow JSON.
+ * @param {Object} workflow      - Parsed workflow object.
+ * @returns {{ path: string|null, source: 'field'|'convention'|null, exists: boolean }}
+ */
+function resolvePlaybook(workflowFile, workflow) {
+  const dir = path.dirname(workflowFile);
+
+  if (typeof workflow.playbook === 'string' && workflow.playbook.trim()) {
+    const playbookPath = path.isAbsolute(workflow.playbook)
+      ? workflow.playbook
+      : path.resolve(dir, workflow.playbook);
+    return { path: playbookPath, source: 'field', exists: fs.existsSync(playbookPath) };
+  }
+
+  const base = path.basename(workflowFile, path.extname(workflowFile));
+  const conventionPath = path.join(dir, `${base}.playbook.md`);
+  if (fs.existsSync(conventionPath)) {
+    return { path: conventionPath, source: 'convention', exists: true };
+  }
+
+  return { path: null, source: null, exists: false };
+}
+
 function listConfiguredWorkflows(config) {
   return Object.entries(config.workflows || {}).map(([id, workflow]) => {
     const gateway = config.gateways[workflow.gateway || config.defaultGateway];
@@ -69,6 +106,7 @@ function resolveWorkflow(input, context) {
   const baseDir = configured ? config.configDir : (options.cwd || process.cwd());
   const workflowPath = configured ? workflowEntry.path : input;
   const { workflowFile, workflow } = loadWorkflowFile(workflowPath, baseDir);
+  const playbook = resolvePlaybook(workflowFile, workflow);
   const gateway = resolveGateway(config, options.gateway, workflowEntry);
   const profile = resolveProfile(config, gateway, workflowEntry, {
     profile: options.profile,
@@ -85,6 +123,7 @@ function resolveWorkflow(input, context) {
     workflowFile,
     workflow,
     workflowEntry,
+    playbook,
     gateway,
     profile,
     variables,
@@ -104,5 +143,6 @@ function resolveWorkflow(input, context) {
 module.exports = {
   loadWorkflowFile,
   listConfiguredWorkflows,
+  resolvePlaybook,
   resolveWorkflow,
 };

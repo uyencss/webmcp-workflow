@@ -183,6 +183,7 @@ webmcp-workflow validate example-title --config dispatcher.config.json
 webmcp-workflow dry-run tests/fixtures/example-title-workflow.json
 webmcp-workflow run example-title --profile personal
 webmcp-workflow history --limit 20
+webmcp-workflow handoff latest        # recovery package for the last run
 ```
 
 All commands that produce machine-readable output support `--json`.
@@ -210,6 +211,59 @@ Override the location with `WEBMCP_HOME`, `--history-dir <path>`, or
 against the config/cwd — e.g. set `".workflow-runs"` to keep artifacts inside the
 current project as in earlier versions). Use `--no-history` to disable history
 for a run.
+
+## Playbooks & Agentic Recovery
+
+A workflow can ship a **playbook** — a sibling `<name>.playbook.md` that gives an
+AI agent what the JSON cannot: the task's goal, hard identifiers, verification
+criteria, and prohibitions. This turns each workflow into a two-tier automation:
+
+- **Fast path** — the workflow JSON, replayed deterministically by the runner.
+  Cheap, fast, pinned to exact identifiers.
+- **Recovery path** — when the run fails, an agent reads the playbook and
+  finishes the task live through the gateway, then patches the JSON (self-heal).
+
+Playbooks are **fully opt-in**: a workflow without one runs exactly as before.
+
+### Linking a playbook
+
+Set the `playbook` field (resolved relative to the workflow file), or rely on the
+convention name `<workflow-basename>.playbook.md`:
+
+```jsonc
+{ "id": "my-workflow", "playbook": "./my_workflow.playbook.md", ... }
+```
+
+`dry-run` reports whether the playbook was found. If the explicit field points at
+a missing file, `validate`/`dry-run` warn (never error).
+
+### The recovery flow (agent operates the CLI)
+
+```text
+webmcp-workflow run <id> --json        # fast path; on failure the JSON output
+                                        # carries a `handoff` hint + runId
+webmcp-workflow handoff latest          # one AI-readable package:
+                                        #   failure + progress + remaining steps
+                                        #   + the full playbook
+# → agent finishes the remaining steps live, verifies per the playbook,
+#   then patches the JSON and re-runs validate + dry-run
+```
+
+The `handoff` package is redacted (same key-based rules as history) and works for
+any recorded run. See `docs/playbook-format.md` for the file spec and
+`skills/webmcp-workflow-creator/playbook-template.md` for a starting template.
+
+> Review playbooks like code: a playbook steers an agent holding a logged-in
+> browser. For `risk: outward-facing` workflows the **Hard identifiers** and
+> **Never do** sections are the guardrails that keep the agent on the right
+> target.
+
+### Headless fallback (reserved)
+
+`defaults.agentFallback` is reserved in config for a future mode where the runner
+itself spawns a headless agent (`claude -p`, `codex exec`, `gemini -p`) on
+failure for fully unattended recovery. It is shape-validated today but not yet
+executed.
 
 ## Security
 

@@ -352,6 +352,9 @@ function validateWorkflow(workflow, options = {}) {
 
   if (!workflow.id) errors.push('Workflow is missing "id"');
   if (!workflow.name) errors.push('Workflow is missing "name"');
+  if (workflow.playbook !== undefined && (typeof workflow.playbook !== 'string' || !workflow.playbook.trim())) {
+    errors.push('Workflow "playbook" must be a non-empty string when present');
+  }
   if (workflow.settings !== undefined && !isObject(workflow.settings)) {
     errors.push('Workflow "settings" must be an object');
   }

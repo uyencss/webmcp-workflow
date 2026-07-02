@@ -113,8 +113,32 @@ function validateConfig(config) {
 
   if (!isObject(config.defaults)) {
     errors.push('defaults must be an object');
-  } else if (config.defaults.timeoutMs !== undefined && !positiveInteger(config.defaults.timeoutMs)) {
-    errors.push('defaults.timeoutMs must be a positive integer');
+  } else {
+    if (config.defaults.timeoutMs !== undefined && !positiveInteger(config.defaults.timeoutMs)) {
+      errors.push('defaults.timeoutMs must be a positive integer');
+    }
+    // Reserved for the Phase B headless agent fallback (CLI-spawns-AI on
+    // failure). Shape-validated now so the key is stable; the runner ignores
+    // it today.
+    const agentFallback = config.defaults.agentFallback;
+    if (agentFallback !== undefined) {
+      if (!isObject(agentFallback)) {
+        errors.push('defaults.agentFallback must be an object');
+      } else {
+        if (agentFallback.enabled !== undefined && typeof agentFallback.enabled !== 'boolean') {
+          errors.push('defaults.agentFallback.enabled must be a boolean');
+        }
+        if (agentFallback.command !== undefined && typeof agentFallback.command !== 'string') {
+          errors.push('defaults.agentFallback.command must be a string');
+        }
+        if (agentFallback.args !== undefined && !Array.isArray(agentFallback.args)) {
+          errors.push('defaults.agentFallback.args must be an array');
+        }
+        if (agentFallback.timeoutMs !== undefined && !positiveInteger(agentFallback.timeoutMs)) {
+          errors.push('defaults.agentFallback.timeoutMs must be a positive integer');
+        }
+      }
+    }
   }
 
   if (!isObject(config.workflows)) {

@@ -11,6 +11,7 @@ const { profilesCommand } = require('./commands/profiles-command');
 const { doctorCommand } = require('./commands/doctor-command');
 const { historyCommand } = require('./commands/history-command');
 const { daemonCommand } = require('./commands/daemon-command');
+const { handoffCommand } = require('./commands/handoff-command');
 
 const COMMANDS = {
   run: runCommand,
@@ -20,6 +21,7 @@ const COMMANDS = {
   profiles: profilesCommand,
   doctor: doctorCommand,
   history: historyCommand,
+  handoff: handoffCommand,
   daemon: daemonCommand,
 };
 
@@ -50,6 +52,7 @@ Commands:
   profiles                        List connected gateway profiles via /health
   doctor                          Check gateway, extension, and profile selection
   history                         List recent workflow runs
+  handoff <runId|latest>          Print an AI-readable recovery package for a run
   daemon                          Run enabled scheduled workflows from config
 
 Common options:
@@ -289,6 +292,7 @@ async function main(args = process.argv.slice(2), io = {}) {
       stderr,
       options: parsed.options,
       signal: controller.signal,
+      commandName: getCommandName(),
     });
   } catch (error) {
     const exitCode = error.exitCode || (error.code === 'GATEWAY_UNAVAILABLE' ? 3 : 1);
