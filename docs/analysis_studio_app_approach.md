@@ -64,7 +64,7 @@ graph TD
 
 ### Thành Phần Cần Xây
 
-#### 1. `workflow-dispatcher.js` — Scheduler + Queue
+#### 1. `webmcp-workflow-cli.js` — Scheduler + Queue
 ```
 Nhiệm vụ:
 - Đọc file config (danh sách workflows + schedule)
@@ -133,7 +133,7 @@ Nhiệm vụ:
 ## Kế Hoạch Thực Hiện (nếu bạn đồng ý)
 
 ### Phase 1 — Core Dispatcher (Day 1)
-- [ ] Tạo project `workflow-dispatcher/` trong `web-automation-extension/`
+- [ ] Tạo project `webmcp-workflow-cli/` trong `web-automation-extension/`
 - [ ] Port `runner/` từ `.archive/` (hiện đang archived!) vào project mới
 - [ ] Xây `dispatcher.js` với cron scheduling
 - [ ] Xây `config.json` schema + validator

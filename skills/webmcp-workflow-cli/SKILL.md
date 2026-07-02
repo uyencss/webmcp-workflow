@@ -1,6 +1,6 @@
 ---
-name: workflow-dispatcher-cli
-description: Run, validate, debug, and smoke-test WebMCP workflow JSON through `webmcp-workflow` or the optional `webmcp workflow` bridge. Use when Codex needs to execute workflow commands, run browser workflows via the WebMCP gateway, choose a multi-profile `profileId`, inspect run history, or verify workflow JSON from `workflow-dispatcher/`.
+name: webmcp-workflow-cli
+description: Run, validate, debug, and smoke-test WebMCP workflow JSON through `webmcp-workflow` or the optional `webmcp workflow` bridge. Use when Codex needs to execute workflow commands, run browser workflows via the WebMCP gateway, choose a multi-profile `profileId`, inspect run history, or verify workflow JSON from `webmcp-workflow-cli/`.
 ---
 
 # Workflow Dispatcher CLI
@@ -24,16 +24,16 @@ Inside a local checkout of the `webmcp-automation-kit` monorepo, run the bin
 directly (paths are relative to the repo root):
 
 ```bash
-node workflow-dispatcher/bin/workflow-dispatcher.js --help
+node webmcp-workflow-cli/bin/webmcp-workflow-cli.js --help
 ```
 
 ## Skill Installation
 
-The source skill lives in `skills/workflow-dispatcher-cli/`. Do not edit provider
+The source skill lives in `skills/webmcp-workflow-cli/`. Do not edit provider
 install copies directly. Install or refresh provider copies with:
 
 ```bash
-npm run install:local      # Codex test install + ~/.local/bin/workflow-dispatcher fallback
+npm run install:local      # Codex test install + ~/.local/bin/webmcp-workflow-cli fallback
 npm run install:codex
 npm run install:claude
 npm run install:gemini
@@ -59,7 +59,7 @@ running installer commands.
 
    ```bash
    webmcp gateway start
-   # or, from a monorepo checkout: npm run gateway --prefix mcp-web-extension
+   # or, from a monorepo checkout: npm run gateway --prefix webmcp-browser-kit
    ```
 
 3. In another terminal, list connected browser profiles:
@@ -147,10 +147,10 @@ Expected successful real-browser result:
 
 ## Troubleshooting
 
-- Gateway unreachable: start `npm run gateway` in `mcp-web-extension/`.
+- Gateway unreachable: start `npm run gateway` in `webmcp-browser-kit/`.
 - `PROFILE_REQUIRED`: run `profiles`, choose one connected id, and pass `--profile`.
 - `PROFILE_NOT_FOUND`: refresh `profiles`; the chosen Chrome profile disconnected or the id is stale.
-- Extension disconnected: reload the unpacked Chrome extension from `mcp-web-extension/webmcp-extension/dist`.
+- Extension disconnected: reload the unpacked Chrome extension from `webmcp-browser-kit/webmcp-extension/dist`.
 - Workflow fails validation: run `dry-run --json` and inspect `validation.errors`.
 
 Keep `.workflow-runs*` and `.examples/` ignored; do not commit generated run artifacts or local example assets. The default history location (`~/.webmcp/workflow-runs`) lives outside the repo, so it needs no gitignore entry — only in-repo overrides via `--history-dir` do.

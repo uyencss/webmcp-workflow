@@ -6,7 +6,7 @@ const http = require('node:http');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const BIN = path.join(ROOT, 'bin/workflow-dispatcher.js');
+const BIN = path.join(ROOT, 'bin/webmcp-workflow-cli.js');
 
 function startGateway() {
   const requests = [];

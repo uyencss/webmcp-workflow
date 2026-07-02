@@ -24,20 +24,20 @@
     "access": "public"
   },
   "bin": {
-    "webmcp-workflow": "bin/workflow-dispatcher.js",
-    "workflow-dispatcher": "bin/workflow-dispatcher.js"
+    "webmcp-workflow": "bin/webmcp-workflow-cli.js",
+    "webmcp-workflow-cli": "bin/webmcp-workflow-cli.js"
   },
   "files": [
     "bin/",
     "src/",
     "scripts/install-agent.mjs",
-    "skills/workflow-dispatcher-cli/",
+    "skills/webmcp-workflow-cli/",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
-    "start": "node bin/workflow-dispatcher.js",
+    "start": "node bin/webmcp-workflow-cli.js",
     "test": "node --test tests/*.test.js",
     "test:workflow": "node tests/run-workflow-smoke.js",
     "link:local": "npm link",

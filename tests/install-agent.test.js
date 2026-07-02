@@ -8,7 +8,7 @@ const test = require('node:test');
 const ROOT = path.resolve(__dirname, '..');
 
 test('install-agent local copies skill and creates CLI wrapper in install home', () => {
-  const installHome = mkdtempSync(path.join(tmpdir(), 'workflow-dispatcher-install-'));
+  const installHome = mkdtempSync(path.join(tmpdir(), 'webmcp-workflow-cli-install-'));
   const result = spawnSync(process.execPath, ['scripts/install-agent.mjs', 'local'], {
     cwd: ROOT,
     env: {
@@ -20,13 +20,13 @@ test('install-agent local copies skill and creates CLI wrapper in install home',
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
 
-  const skillFile = path.join(installHome, '.codex', 'skills', 'workflow-dispatcher-cli', 'SKILL.md');
+  const skillFile = path.join(installHome, '.codex', 'skills', 'webmcp-workflow-cli', 'SKILL.md');
   assert.equal(existsSync(skillFile), true);
 
-  const cliLink = path.join(installHome, '.local', 'bin', 'workflow-dispatcher');
+  const cliLink = path.join(installHome, '.local', 'bin', 'webmcp-workflow-cli');
   assert.equal(existsSync(cliLink), true);
   assert.equal(statSync(cliLink).mode & 0o111, 0o111);
-  assert.match(readFileSync(cliLink, 'utf8'), /bin\/workflow-dispatcher\.js/);
+  assert.match(readFileSync(cliLink, 'utf8'), /bin\/webmcp-workflow-cli\.js/);
 
   const help = spawnSync(cliLink, ['--help'], {
     cwd: ROOT,

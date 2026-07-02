@@ -29,11 +29,11 @@ function getCommandName() {
   }
 
   const invokedName = path.basename(process.argv[1] || '');
-  if (invokedName && invokedName !== 'workflow-dispatcher.js') {
+  if (invokedName && invokedName !== 'webmcp-workflow-cli.js') {
     return invokedName;
   }
 
-  return 'workflow-dispatcher';
+  return 'webmcp-workflow-cli';
 }
 
 function printRootHelp(stdout = process.stdout, commandName = getCommandName()) {

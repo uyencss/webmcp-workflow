@@ -26,7 +26,7 @@ Or run it without installing:
 npx @gyga-browser/webmcp-workflow --help
 ```
 
-The package also exposes a `workflow-dispatcher` bin as a compatibility alias.
+The package also exposes a `webmcp-workflow-cli` bin as a compatibility alias.
 
 When installed alongside `@gyga-browser/webmcp-browser-automation-kit`, the
 same runner can also be invoked through the optional branded bridge:
@@ -38,15 +38,15 @@ webmcp workflow --help
 For direct runner development inside a monorepo checkout:
 
 ```bash
-node bin/workflow-dispatcher.js --help
+node bin/webmcp-workflow-cli.js --help
 ```
 
-To install the companion skill and a local `workflow-dispatcher` fallback command
+To install the companion skill and a local `webmcp-workflow-cli` fallback command
 for Codex testing:
 
 ```bash
 npm run install:local
-workflow-dispatcher --help
+webmcp-workflow-cli --help
 ```
 
 Provider-specific skill installs:
@@ -60,9 +60,9 @@ npm run install:cursor
 npm run install:copilot
 ```
 
-The source skill lives in `skills/workflow-dispatcher-cli/`. The installer
+The source skill lives in `skills/webmcp-workflow-cli/`. The installer
 copies it into each provider's global skill/rules directory, following the same
-pattern as `mcp-web-extension/scripts/install-agent.mjs`.
+pattern as `webmcp-browser-kit/scripts/install-agent.mjs`.
 
 ## Prerequisites
 

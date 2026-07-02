@@ -6,7 +6,7 @@
 
 ## Goal
 
-Turn `workflow-dispatcher` into an installable local CLI command that executes WebMCP workflow JSON from the terminal.
+Turn `webmcp-workflow-cli` into an installable local CLI command that executes WebMCP workflow JSON from the terminal.
 
 The command should wrap the reorganized runner, keep workflow execution outside the browser extension, and send automation commands through the WebMCP HTTP gateway.
 
@@ -32,7 +32,7 @@ const {
 Current runner layout:
 
 ```text
-workflow-dispatcher/
+webmcp-workflow-cli/
   src/
     runner/
       index.js
@@ -49,7 +49,7 @@ workflow-dispatcher/
       strategies/aria-ref.js
 ```
 
-`src/runner/run.js` stays as a backward-compatible legacy entrypoint while the primary user-facing CLI is `webmcp-workflow`, delegated to `bin/workflow-dispatcher.js`.
+`src/runner/run.js` stays as a backward-compatible legacy entrypoint while the primary user-facing CLI is `webmcp-workflow`, delegated to `bin/webmcp-workflow-cli.js`.
 
 ## Non-Goals
 
@@ -99,12 +99,12 @@ WEBMCP_PROFILE_ID=<profile-id>
 ## Proposed File Layout
 
 ```text
-workflow-dispatcher/
+webmcp-workflow-cli/
   package.json
   README.md
   tests/fixtures/dispatcher.config.json
   bin/
-    workflow-dispatcher.js
+    webmcp-workflow-cli.js
   src/
     cli.js
     commands/
@@ -211,11 +211,11 @@ Profile resolution precedence:
 ## Phase 1 — Package and CLI Entrypoint
 
 - [x] Create `package.json`.
-  - [x] Set `name` to `workflow-dispatcher`.
+  - [x] Set `name` to `webmcp-workflow-cli`.
   - [x] Set `private: true` unless publishing is explicitly needed.
-  - [x] Add `bin.workflow-dispatcher = "bin/workflow-dispatcher.js"`.
+  - [x] Add `bin.webmcp-workflow-cli = "bin/webmcp-workflow-cli.js"`.
   - [x] Add scripts: `start`, `test`, and optionally `lint`.
-- [x] Create `bin/workflow-dispatcher.js`.
+- [x] Create `bin/webmcp-workflow-cli.js`.
   - [x] Keep shebang `#!/usr/bin/env node`.
   - [x] Import and execute `src/cli.js`.
   - [x] Catch fatal errors, print concise messages, and exit non-zero.
@@ -441,8 +441,8 @@ Acceptance:
 
 ## Phase 10 — Provider Skill Installer
 
-- [x] Move the source skill out of provider-specific folders and into `skills/workflow-dispatcher-cli/`.
-- [x] Add `scripts/install-agent.mjs` based on the `mcp-web-extension` provider-install pattern.
+- [x] Move the source skill out of provider-specific folders and into `skills/webmcp-workflow-cli/`.
+- [x] Add `scripts/install-agent.mjs` based on the `webmcp-browser-kit` provider-install pattern.
 - [x] Add provider-specific install scripts:
   - [x] `install:local`
   - [x] `install:codex`

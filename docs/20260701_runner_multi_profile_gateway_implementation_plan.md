@@ -2,7 +2,7 @@
 
 > Date: 2026-07-01  
 > Status: Planned  
-> Scope: `workflow-dispatcher/src/runner/`, future `workflow-dispatcher` CLI  
+> Scope: `webmcp-workflow-cli/src/runner/`, future `webmcp-workflow-cli` CLI  
 > Goal: make the reorganized runner able to execute workflow JSON against the new WebMCP gateway when one gateway serves multiple Chrome profiles.
 
 ## Context
@@ -27,7 +27,7 @@ src/runner/
 
 That reorganization intentionally changed no runtime logic. The next update should keep that structure and add profile-aware gateway routing in a small, explicit way.
 
-The gateway-side multi-profile contract already exists in `mcp-web-extension`:
+The gateway-side multi-profile contract already exists in `webmcp-browser-kit`:
 
 - `GET /health` returns connected profiles, including `profiles`, `profileCount`, and optionally `profileDetails`.
 - `POST /api` accepts `{ "method": "...", "params": { ... }, "profileId": "..." }`.
@@ -73,7 +73,7 @@ The runner should not guess aliases itself.
 
 ### Task 1: Add `profileId` support to transport
 
-File: `workflow-dispatcher/src/runner/core/transport.js`
+File: `webmcp-workflow-cli/src/runner/core/transport.js`
 
 - [ ] Extend `sendCommand(method, params, options)` JSDoc with `options.profileId`.
 - [ ] Build `requestBody` before `fetch`:
@@ -92,7 +92,7 @@ Acceptance:
 
 ### Task 2: Thread profile option through `WorkflowRunner`
 
-File: `workflow-dispatcher/src/runner/core/workflow-runner.js`
+File: `webmcp-workflow-cli/src/runner/core/workflow-runner.js`
 
 - [ ] Extend constructor JSDoc with `options.profileId`.
 - [ ] Pass `profileId: this.options.profileId` from `sendGatewayCommand()` into `this.transport(...)`.
@@ -105,7 +105,7 @@ Acceptance:
 
 ### Task 3: Update legacy runner CLI flags
 
-File: `workflow-dispatcher/src/runner/run.js`
+File: `webmcp-workflow-cli/src/runner/run.js`
 
 - [ ] Add `--profile-id ID`.
 - [ ] Add env fallback `WEBMCP_PROFILE_ID`.
@@ -122,8 +122,8 @@ Acceptance:
 
 Files:
 
-- `workflow-dispatcher/test/transport-profile.test.js` or future `tests/runner-profile.test.js`
-- `workflow-dispatcher/package.json` when test script exists
+- `webmcp-workflow-cli/test/transport-profile.test.js` or future `tests/runner-profile.test.js`
+- `webmcp-workflow-cli/package.json` when test script exists
 
 Use built-in `node:test` if a test suite is added.
 

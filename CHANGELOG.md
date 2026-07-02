@@ -52,9 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redacted run history artifacts (`events.jsonl`, `summary.json`,
   `workflow.normalized.json`) under `.workflow-runs/<runId>/`.
 - `--version` flag and machine-readable `--json` output on reporting commands.
-- Companion `workflow-dispatcher-cli` skill plus provider installers
+- Companion `webmcp-workflow-cli` skill plus provider installers
   (`install:claude`, `install:codex`, `install:gemini`, `install:antigravity`,
   `install:cursor`, `install:copilot`, `install:local`).
-- Dual bin names: `webmcp-workflow` (canonical) and `workflow-dispatcher`
+- Dual bin names: `webmcp-workflow` (canonical) and `webmcp-workflow-cli`
   (compatibility alias). Also invokable via the optional `webmcp workflow`
   bridge from `@gyga-browser/webmcp-browser-automation-kit`.

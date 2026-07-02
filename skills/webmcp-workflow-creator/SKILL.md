@@ -1,12 +1,12 @@
 ---
 name: webmcp-workflow-creator
-description: Author WebMCP workflow JSON that runs through `webmcp-workflow` (the workflow-dispatcher runner). Use when creating, designing, or debugging a workflow file — scraping, form-filling, multi-step browser automation, looping over keywords/pages/items, extracting structured data, or choosing between DOM interaction and calling a site's underlying API. Covers the `type`/`command`/`strategy`/`guard`/`wait`/`captureAs`/`forEach` schema, template interpolation, the API-first + `forEach` + pagination decision rules, and fast reading with `getPageText`.
+description: Author WebMCP workflow JSON that runs through `webmcp-workflow` (the webmcp-workflow-cli runner). Use when creating, designing, or debugging a workflow file — scraping, form-filling, multi-step browser automation, looping over keywords/pages/items, extracting structured data, or choosing between DOM interaction and calling a site's underlying API. Covers the `type`/`command`/`strategy`/`guard`/`wait`/`captureAs`/`forEach` schema, template interpolation, the API-first + `forEach` + pagination decision rules, and fast reading with `getPageText`.
 ---
 
 # WebMCP Workflow Creator
 
 This skill teaches you to **write workflow JSON** for the WebMCP workflow runner
-(`webmcp-workflow`). The sibling skill `workflow-dispatcher-cli` covers *running*
+(`webmcp-workflow`). The sibling skill `webmcp-workflow-cli` covers *running*
 files; this one covers *designing* them.
 
 A workflow drives a real logged-in Chrome tab through the WebMCP gateway. Steps

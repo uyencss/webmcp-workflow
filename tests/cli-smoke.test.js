@@ -5,7 +5,7 @@ const test = require('node:test');
 const { getCommandName, main } = require('../src/cli');
 
 const ROOT = path.resolve(__dirname, '..');
-const BIN = path.join(ROOT, 'bin/workflow-dispatcher.js');
+const BIN = path.join(ROOT, 'bin/webmcp-workflow-cli.js');
 
 test('CLI help command name follows the invoked binary or explicit bridge override', () => {
   const originalArgv1 = process.argv[1];

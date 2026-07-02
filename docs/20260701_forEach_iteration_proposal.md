@@ -20,7 +20,7 @@ The MobiFone bidding tracker ([`theo_doi_dau_thau.json`](../.examples/workflows/
 
 This is real but bounded. Two facts shape the right fix:
 
-1. **Workflow JSON is usually authored by an AI model** (see `skills/workflow-dispatcher-cli/`), so the fix that matters is not "less typing" but **not forcing the model to emit N copies of a body it must keep consistent**, and **keeping each unit of work inside one command timeout with its own retry/observability**.
+1. **Workflow JSON is usually authored by an AI model** (see `skills/webmcp-workflow-cli/`), so the fix that matters is not "less typing" but **not forcing the model to emit N copies of a body it must keep consistent**, and **keeping each unit of work inside one command timeout with its own retry/observability**.
 2. **Every meaningful step is already `evaluateJS`** — arbitrary page-JS. The loop body is therefore almost always expressible as page-JS, which is exactly the case a single-body loop covers.
 
 The workflow JSON needs a loop construct — the *smallest* one that covers the all-`evaluateJS` case cleanly.
@@ -295,7 +295,7 @@ Notes:
 
 ## 7. Skill guidance (shipped with the feature)
 
-The loop construct is worthless if the workflow generator keeps copy-pasting. `skills/workflow-dispatcher-cli/SKILL.md` must teach the decision explicitly:
+The loop construct is worthless if the workflow generator keeps copy-pasting. `skills/webmcp-workflow-cli/SKILL.md` must teach the decision explicitly:
 
 1. **Prefer the API over the DOM.** Open DevTools → Network (or WebMCP `start_network_capture`), find the XHR/JSON endpoint behind the UI, and call it from `evaluateJS` with `fetch`. Raise `pageSize` and iterate the page cursor instead of clicking pages. This removes most loops entirely.
 2. **All-`evaluateJS` body → body-1-step `forEach`.** One item = one `evaluateJS`; put waits/polling **inside** the JS (`await`), not as runner `wait` between sub-steps.
@@ -352,7 +352,7 @@ The single-body schema is a strict subset, so adding `steps: [...]` later is bac
 | [`workflow-runner.js`](../src/runner/core/workflow-runner.js) | Add `executeForEachStep()`; dispatch by `step.type` in `run()`. |
 | [`event-logger.js`](../src/event-logger.js) | Render forEach iteration lines. |
 | [`executor.js`](../src/executor.js) | Annotate a forEach step's single body command with iteration count in dry-run/used-commands. |
-| `skills/workflow-dispatcher-cli/SKILL.md` | Add §7 decision guidance. |
+| `skills/webmcp-workflow-cli/SKILL.md` | Add §7 decision guidance. |
 
 ### New files
 

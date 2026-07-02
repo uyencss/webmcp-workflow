@@ -113,13 +113,13 @@ Proposed sections for `workflow-validator.js`:
 
 ### 5. Extract strategy methods into `strategies/`
 
-#### [NEW] [ai-vision.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher/runner/strategies/ai-vision.js)
+#### [NEW] [ai-vision.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/webmcp-workflow-cli/runner/strategies/ai-vision.js)
 Contains (moved from `workflow-runner.js`, bodies unchanged):
 - `keywordTokens(instruction)` — NLP tokenizer
 - `scoreInteractiveElement(element, instruction, tokens)` — Element scoring
 - `executeAiVisionStep(step, context, sendCommand, timeoutMs)` — Strategy entry point
 
-#### [NEW] [aria-ref.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher/runner/strategies/aria-ref.js)
+#### [NEW] [aria-ref.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/webmcp-workflow-cli/runner/strategies/aria-ref.js)
 Contains (moved from `workflow-runner.js`, bodies unchanged):
 - `ARIA_ACTION_COMMANDS` — Action → command mapping constant
 - `parseAriaSnapshot(snapshot)` — Snapshot parser
@@ -127,7 +127,7 @@ Contains (moved from `workflow-runner.js`, bodies unchanged):
 - `buildAriaActionParams(command, params)` — Param builder
 - `executeAriaRefStep(step, context, sendCommand, timeoutMs)` — Strategy entry point
 
-#### [MODIFY] [workflow-runner.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher/runner/core/workflow-runner.js)
+#### [MODIFY] [workflow-runner.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/webmcp-workflow-cli/runner/core/workflow-runner.js)
 - Remove the extracted functions
 - Add `require('../strategies/ai-vision')` and `require('../strategies/aria-ref')`
 - The `executeStepAttempt` method calls the imported strategy functions instead of `this.executeAiVisionStep` / `this.executeAriaRefStep`
@@ -136,7 +136,7 @@ Contains (moved from `workflow-runner.js`, bodies unchanged):
 
 ### 6. Add `index.js` barrel export
 
-#### [NEW] [index.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/workflow-dispatcher/runner/index.js)
+#### [NEW] [index.js](file:///Users/ttcenter/Desktop/VIBE_CODE/webmcp-automation-kit/webmcp-workflow-cli/runner/index.js)
 
 ```js
 /**

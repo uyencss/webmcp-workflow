@@ -2,7 +2,7 @@
 /**
  * Installer for the Workflow Dispatcher CLI skill.
  *
- * The source skill lives in this repo under skills/workflow-dispatcher-cli.
+ * The source skill lives in this repo under skills/webmcp-workflow-cli.
  * This installer copies it into provider-specific global skill locations so
  * each AI runtime can discover it independently.
  *
@@ -23,12 +23,12 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SKILL_NAME = 'workflow-dispatcher-cli';
+const SKILL_NAME = 'webmcp-workflow-cli';
 const SKILL_SRC = join(ROOT, 'skills', SKILL_NAME);
 const CREATOR_SKILL_NAME = 'webmcp-workflow-creator';
 // Skills copied into every provider's skills directory.
 const ALL_SKILLS = [SKILL_NAME, CREATOR_SKILL_NAME];
-const BIN_SRC = join(ROOT, 'bin', 'workflow-dispatcher.js');
+const BIN_SRC = join(ROOT, 'bin', 'webmcp-workflow-cli.js');
 const INSTALL_HOME = process.env.WORKFLOW_DISPATCHER_INSTALL_HOME || homedir();
 
 const log = (...args) => console.log(...args);
@@ -65,7 +65,7 @@ function copySkillsInto(skillsDir) {
 
 function installLocalBin() {
   const binDir = join(INSTALL_HOME, '.local', 'bin');
-  const binPath = join(binDir, 'workflow-dispatcher');
+  const binPath = join(binDir, 'webmcp-workflow-cli');
   mkdirSync(binDir, { recursive: true });
 
   const content = [
@@ -109,7 +109,7 @@ const TARGETS = {
   codex() {
     head('Codex');
     copySkillsInto(join(INSTALL_HOME, '.codex', 'skills'));
-    note('Use `webmcp-workflow` when installed, `webmcp workflow` from the monorepo checkout, or run `npm run install:local` to create the direct ~/.local/bin/workflow-dispatcher fallback.');
+    note('Use `webmcp-workflow` when installed, `webmcp workflow` from the monorepo checkout, or run `npm run install:local` to create the direct ~/.local/bin/webmcp-workflow-cli fallback.');
   },
 
   copilot() {
