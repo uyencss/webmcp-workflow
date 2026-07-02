@@ -83,6 +83,19 @@ running installer commands.
    webmcp-workflow history --history-dir .workflow-runs-real
    ```
 
+## Run History Location
+
+By default, run artifacts are written to the shared WebMCP kit home:
+`~/.webmcp/workflow-runs/<runId>/` (the same `~/.webmcp` used by the Chrome
+launcher). Resolution order for the home root is `WEBMCP_HOME` >
+`WEBMCP_DATA_DIR` (back-compat alias) > `~/.webmcp`.
+
+Override the history location per run with `--history-dir <path>` or per project
+with `defaults.historyDir` in `dispatcher.config.json` (a relative value resolves
+against the config/cwd). The `--history-dir .workflow-runs-real` examples above
+are explicit overrides for smoke tests; omit the flag to write to the default
+`~/.webmcp/workflow-runs`.
+
 ## Multi-Profile Rules
 
 The gateway accepts `profileId` as a top-level `/api` field:
@@ -142,4 +155,4 @@ Expected successful real-browser result:
 - Extension disconnected: reload the unpacked Chrome extension from `mcp-web-extension/webmcp-extension/dist`.
 - Workflow fails validation: run `dry-run --json` and inspect `validation.errors`.
 
-Keep `.workflow-runs*` and `.examples/` ignored; do not commit generated run artifacts or local example assets.
+Keep `.workflow-runs*` and `.examples/` ignored; do not commit generated run artifacts or local example assets. The default history location (`~/.webmcp/workflow-runs`) lives outside the repo, so it needs no gitignore entry — only in-repo overrides via `--history-dir` do.

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { CliError } = require('./errors');
 const { defaultHealthUrl, toAbsolutePath } = require('./paths');
+const { getDefaultHistoryDir } = require('./home');
 
 const DEFAULT_GATEWAY_NAME = 'local';
 const DEFAULT_GATEWAY_URL = 'http://localhost:7865/api';
@@ -29,7 +30,7 @@ function defaultConfig(env = {}) {
       timeoutMs: 30000,
       strict: false,
       allowUnknownCommand: false,
-      historyDir: '.workflow-runs',
+      historyDir: getDefaultHistoryDir(),
       redactKeys: ['token', 'password', 'cookie', 'authorization', 'apiKey'],
     },
     workflows: {},

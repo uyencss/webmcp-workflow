@@ -197,13 +197,19 @@ All commands that produce machine-readable output support `--json`.
 
 ## History
 
-Runs write redacted artifacts to `.workflow-runs/<runId>/` by default:
+Runs write redacted artifacts to `~/.webmcp/workflow-runs/<runId>/` by default
+(the shared WebMCP kit home, resolved as `WEBMCP_HOME` > `WEBMCP_DATA_DIR` >
+`~/.webmcp`):
 
 - `events.jsonl`
 - `summary.json`
 - `workflow.normalized.json`
 
-Use `--no-history` to disable history for a run.
+Override the location with `WEBMCP_HOME`, `--history-dir <path>`, or
+`defaults.historyDir` in `dispatcher.config.json` (a relative value resolves
+against the config/cwd — e.g. set `".workflow-runs"` to keep artifacts inside the
+current project as in earlier versions). Use `--no-history` to disable history
+for a run.
 
 ## Security
 
