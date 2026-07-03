@@ -80,7 +80,7 @@ function evalSignal(summary, sig) {
       return { id: sig.id, pass: !missing.length, detail: missing.length ? `missing keys: ${missing.join(', ')}` : 'all required keys present' };
     }
     default:
-      return { id: sig.id, pass: true, skipped: true, detail: `unknown signal type '${sig.type}'` };
+      return { id: sig.id, pass: false, detail: `unknown signal type '${sig.type}'` };
   }
 }
 

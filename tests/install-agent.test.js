@@ -20,8 +20,10 @@ test('install-agent local copies skill and creates CLI wrapper in install home',
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
 
-  const skillFile = path.join(installHome, '.codex', 'skills', 'webmcp-workflow-cli', 'SKILL.md');
-  assert.equal(existsSync(skillFile), true);
+  for (const skillName of ['webmcp-workflow-cli', 'webmcp-workflow-creator', 'webmcp-pipeline-creator']) {
+    const skillFile = path.join(installHome, '.codex', 'skills', skillName, 'SKILL.md');
+    assert.equal(existsSync(skillFile), true);
+  }
 
   const cliLink = path.join(installHome, '.local', 'bin', 'webmcp-workflow-cli');
   assert.equal(existsSync(cliLink), true);
@@ -34,4 +36,24 @@ test('install-agent local copies skill and creates CLI wrapper in install home',
   });
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /Workflow Dispatcher CLI/);
+});
+
+test('install-agent cursor exposes all workflow skill rule references', () => {
+  const installHome = mkdtempSync(path.join(tmpdir(), 'webmcp-workflow-cli-cursor-'));
+  const result = spawnSync(process.execPath, ['scripts/install-agent.mjs', 'cursor'], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      WORKFLOW_DISPATCHER_INSTALL_HOME: installHome,
+    },
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+
+  for (const skillName of ['webmcp-workflow-cli', 'webmcp-workflow-creator', 'webmcp-pipeline-creator']) {
+    const ruleFile = path.join(installHome, '.cursor', 'rules', `${skillName}.mdc`);
+    assert.equal(existsSync(ruleFile), true);
+    assert.match(readFileSync(ruleFile, 'utf8'), new RegExp(`${skillName}/SKILL\\.md`));
+  }
 });

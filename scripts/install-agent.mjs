@@ -149,6 +149,15 @@ const TARGETS = {
       `See source skill: ${join(ROOT, 'skills', CREATOR_SKILL_NAME, 'SKILL.md')}`,
       '',
     ].join('\n'));
+    writeIfAbsent(join(INSTALL_HOME, '.cursor', 'rules', `${PIPELINE_SKILL_NAME}.mdc`), [
+      '---',
+      'description: Author WebMCP pipeline JSON that composes verified workflows',
+      'alwaysApply: false',
+      '---',
+      '',
+      `See source skill: ${join(ROOT, 'skills', PIPELINE_SKILL_NAME, 'SKILL.md')}`,
+      '',
+    ].join('\n'));
   },
 };
 

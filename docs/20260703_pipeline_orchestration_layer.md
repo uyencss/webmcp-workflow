@@ -1,7 +1,8 @@
 # Pipeline Orchestration Layer — Design & Implementation Plan
 
 > **Date**: 2026-07-03
-> **Status**: P0–P3 implemented (2026-07-03) & verified end-to-end via the gateway. P4/P4b/P5 pending.
+> **Status**: P0–P4b implemented (2026-07-03). Safety hardening tracked in
+> `20260703_pipeline_orchestration_hardening_plan.md`; P5 pending.
 > **Scope**: `webmcp-workflow-cli/src/` (new pipeline runner + relocated grading engine); pipeline manifests stored as data in `webmcp-workflow-store/_cross-site/pipelines/`
 > **Depends on**: `20260701_workflow_dispatcher_cli_implementation_plan.md` (single-workflow runner), `20260702_playbook_agentic_recovery_implementation_plan.md` (resume/handoff), store `2026-07-03-knowledge-versioning-and-verification.md` (verify `signals`, store-doctor)
 
@@ -194,7 +195,7 @@ defines, same as workflow-creator teaches the workflow schema).
       "workflow": "sites/capcut/workflows/render.json",
       "with":     { "script": "{{SCRIPT.text}}" },
       "captureAs":"VIDEO",
-      "verify":   { "type": "artifact", "path": "VIDEO.filePath", "exists": true }, // lightweight inline verify
+      "verify":   { "type": "artifact", "path": "$.filePath", "exists": true }, // checks this stage's FINAL_REPORT
       "risk":     "generate"
     },
     {
@@ -218,7 +219,7 @@ defines, same as workflow-creator teaches the workflow schema).
   **inter-workflow state bridge**.
 - **`verify`** — two forms: (a) a path to a `*.verify.json` → grade the run's `summary.json`
   with `gradeSummary` (signals); (b) inline `{ type:"artifact", path, exists }` for a light
-  check (a file was produced). Verdict != green → apply `onStageFail`. **Verify-as-gate.**
+  check against that child workflow's `FINAL_REPORT`, e.g. `path: "$.filePath"`. Verdict != green → apply `onStageFail`. **Verify-as-gate.**
 - **`captureAs`** — store the stage's `FINAL_REPORT` into pipeline state for later stages.
 - **`risk`** — `read-only | generate | outward-facing | destructive`. Drives the risk-tier
   policy (§6). `outward-facing` is always gated regardless of settings.
@@ -268,7 +269,7 @@ write pipeline-summary.json
 ```
 
 ### Checkpoint & resume
-- Checkpoint = `{ runId, manifestRef, manifestHash, storeGitSha, stageIndex, state, status }`
+- Checkpoint = `{ runId, manifestRef, manifestHash, storeGitSha, stageAnchors, completedStages, state, status }`
   written to `<checkpointDir>/<runId>/checkpoint.json` after each stage.
 - `resume <runId>` = load the checkpoint → continue from the next `stageIndex` (prior-stage
   state intact → **do not re-run expensive / already-done outward-facing stages**).
@@ -316,8 +317,8 @@ server alive → deferred as a **future improvement**, not in the first phase.
 | **P1 ✅** | `pipeline run`: `src/pipeline/pipeline-runner.js` reads the manifest, runs stages via the existing runner, `with`-hydrates + `captureAs` state, checkpoints after each stage. | Done |
 | **P2 ✅** | Verify-gate: `gradeStage` grades a stage's `summary` against `*.verify.json` (signals) or an inline `{type:"artifact", path, exists}`; non-green → `onStageFail`. | Done |
 | **P3 ✅** | Human gate + pending-file + `resume`/`approve`/`reject`/`scan`/`status` + idempotency (`done.json`). Verified: outward-facing stage pauses, approve→scan resumes, re-scan is idempotent. | Done. Wiring `scan` into doctor-cron is still pending. |
-| **P4** | Migrate the `gemini-to-suno` monolith → a 2-stage pipeline (gemini-workflow → suno-workflow), splitting the blobs into child workflows with `.verify.json`. | Proof the loop closes; produces a real reference pipeline |
-| **P4b** | Write the `webmcp-pipeline-creator` skill (§4.4) at `webmcp-workflow-cli/skills/webmcp-pipeline-creator/`; wire it into the skill installer alongside `webmcp-workflow-creator`. | Author skill documents settled schema; use the P4 pipeline as its worked example |
+| **P4 ✅** | Migrate the `gemini-to-suno` monolith → a 2-stage pipeline (gemini-workflow → suno-workflow), splitting the blobs into child workflows with `.verify.json`. | Reference pipeline lives in the store. |
+| **P4b ✅** | Write the `webmcp-pipeline-creator` skill (§4.4) at `webmcp-workflow-cli/skills/webmcp-pipeline-creator/`; wire it into the skill installer alongside `webmcp-workflow-creator`. | Done; hardening pass added package/Cursor coverage. |
 | **P5 (future)** | Approve via Telegram/Zalo (webhook/long-poll); notify on failure; wire `scan` into doctor-cron; merge the rest of store-doctor into the runner. | — |
 
 **Start:** P0 + P1 to prove the chain + checkpoint run, then P2/P3 add the gates.

@@ -15,6 +15,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 
 const { loadConfig } = require('../config-loader');
 const { readEnv } = require('../env-loader');
@@ -54,6 +55,22 @@ function nowIso() {
 
 function hashOf(str) {
   return crypto.createHash('sha256').update(str).digest('hex').slice(0, 12);
+}
+
+function hashFile(file) {
+  if (!file || !fs.existsSync(file)) return null;
+  return hashOf(fs.readFileSync(file));
+}
+
+function gitShaFor(dir) {
+  try {
+    return execFileSync('git', ['-C', dir, 'rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return null;
+  }
 }
 
 // Resolve a dotted ref like "PIPELINE.keywords" or "NEWS.items" against state.
@@ -96,6 +113,71 @@ function findStoreRoot(manifestPath) {
     dir = parent;
   }
   return path.dirname(path.resolve(manifestPath));
+}
+
+function stageRisk(stage) {
+  return stage.risk || 'read-only';
+}
+
+function validateManifest(manifest) {
+  const errors = [];
+  const stages = Array.isArray(manifest.stages) ? manifest.stages : [];
+  const validRisks = new Set(['read-only', 'generate', 'outward-facing', 'destructive']);
+
+  if (!Array.isArray(stages) || !stages.length) {
+    errors.push('stages must be a non-empty array');
+    return errors;
+  }
+
+  stages.forEach((stage, index) => {
+    const label = stage.id || `#${index}`;
+    if (!stage || typeof stage !== 'object' || Array.isArray(stage)) {
+      errors.push(`stage ${label} must be an object`);
+      return;
+    }
+    if (!stage.id || typeof stage.id !== 'string') errors.push(`stage ${label} needs a string id`);
+    if (!stage.workflow || typeof stage.workflow !== 'string') errors.push(`stage ${label} needs a workflow path`);
+
+    const risk = stageRisk(stage);
+    if (!validRisks.has(risk)) {
+      errors.push(`stage ${label} has unknown risk '${risk}'`);
+    }
+    if (risk === 'outward-facing' && (!stage.idempotencyKey || typeof stage.idempotencyKey !== 'string' || !stage.idempotencyKey.trim())) {
+      errors.push(`stage ${label} is outward-facing and needs a non-empty idempotencyKey`);
+    }
+    if (risk === 'destructive') {
+      errors.push(`stage ${label} is destructive; destructive stages are blocked by this runner`);
+    }
+  });
+
+  return errors;
+}
+
+function buildStageAnchors(stages, storeRoot) {
+  return (stages || []).map((stage, index) => {
+    const workflowPath = stage.workflow ? path.resolve(storeRoot, stage.workflow) : null;
+    const verifyPath = typeof stage.verify === 'string' ? path.resolve(storeRoot, stage.verify) : null;
+    return {
+      index,
+      id: stage.id || null,
+      workflow: stage.workflow || null,
+      workflowHash: hashFile(workflowPath),
+      verify: typeof stage.verify === 'string' ? stage.verify : null,
+      verifyHash: hashFile(verifyPath),
+    };
+  });
+}
+
+function failureAction(onStageFail) {
+  if (onStageFail === 'skip') return 'continue';
+  if (onStageFail === 'alert') return 'alert';
+  return 'stop';
+}
+
+function stageFailureStatus(action) {
+  if (action === 'continue') return 'running';
+  if (action === 'alert') return 'alert';
+  return 'failed';
 }
 
 // ─── checkpoint / pending / idempotency I/O ─────────────────────────────────────
@@ -177,6 +259,10 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
   const onStageFail = settings.onStageFail || 'stop';
   const checkpointDir = path.resolve(expandHome(settings.checkpointDir || path.join(webmcpHome(), 'pipelines')));
   const manifestHash = hashOf(JSON.stringify(manifest));
+  const storeGitSha = gitShaFor(storeRoot);
+  const stageAnchors = buildStageAnchors(stages, storeRoot);
+  const checkpointBase = { manifestRef: abs, manifestHash, storeGitSha, stageAnchors };
+  const manifestErrors = validateManifest(manifest);
 
   let runId;
   let state;
@@ -190,13 +276,25 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     if (cp.manifestHash && cp.manifestHash !== manifestHash) {
       warn(`manifest changed since this run started (hash ${cp.manifestHash} → ${manifestHash}); resuming anyway.`);
     }
+    if (cp.storeGitSha && storeGitSha && cp.storeGitSha !== storeGitSha) {
+      warn(`store git revision changed since this run started (${cp.storeGitSha} → ${storeGitSha}); resuming anyway.`);
+    }
     log(`▶ resume pipeline ${manifest.id} runId=${runId} from stage #${startIndex}`);
   } else {
     runId = `${manifest.id}-${shortId()}`;
     state = { PIPELINE: manifest.variables || {} };
     startIndex = 0;
-    writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: 0, status: 'running', state });
+    if (manifestErrors.length) {
+      writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: 0, status: 'failed', state, errors: manifestErrors });
+      return { status: 'failed', runId, reason: manifestErrors.join('; '), errors: manifestErrors };
+    }
+    writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: 0, status: 'running', state });
     log(`▶ run pipeline ${manifest.id} runId=${runId} (${stages.length} stages)`);
+  }
+
+  if (resumeRunId && manifestErrors.length) {
+    writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: startIndex, status: 'failed', state, errors: manifestErrors });
+    return { status: 'failed', runId, reason: manifestErrors.join('; '), errors: manifestErrors };
   }
 
   const env = readEnv();
@@ -204,33 +302,38 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
 
   for (let i = startIndex; i < stages.length; i++) {
     const stage = stages[i];
-    const gated = stage.risk === 'outward-facing' && (stage.gate || 'human') === 'human';
+    const gated = stageRisk(stage) === 'outward-facing';
 
     // ── human gate (outward-facing) ──
     if (gated) {
       const pf = pendingFile(checkpointDir, runId, stage.id);
       const pending = fs.existsSync(pf) ? readJson(pf) : null;
       if (!pending || pending.status === 'awaiting-approval') {
-        const idempotencyKey = stage.idempotencyKey ? String(hydrateValue(stage.idempotencyKey, state)) : null;
+        const hydratedKey = hydrateValue(stage.idempotencyKey, state);
+        const idempotencyKey = hydratedKey == null || String(hydratedKey).trim() === '' ? null : String(hydratedKey);
+        if (!idempotencyKey) {
+          writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i, status: 'failed', state, failedStage: stage.id });
+          return { status: 'failed', runId, stage: stage.id, reason: 'outward-facing stage needs a resolvable idempotencyKey' };
+        }
         writeJsonFile(pf, {
           runId, stageId: stage.id, stageIndex: i, status: 'awaiting-approval',
           workflow: stage.workflow, idempotencyKey,
           artifacts: state, checkpoint: checkpointFile(checkpointDir, runId), createdAt: nowIso(),
         });
-        writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i, status: 'awaiting-approval', state });
+        writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i, status: 'awaiting-approval', state });
         log(`⏸  stage '${stage.id}' is outward-facing — paused for approval.`);
         log(`   approve: webmcp-workflow pipeline approve ${runId}`);
         return { status: 'awaiting-approval', runId, stage: stage.id, pendingFile: pf };
       }
       if (pending.status === 'rejected') {
         log(`✗  stage '${stage.id}' was rejected — stopping pipeline.`);
-        writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i, status: 'rejected', state });
+        writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i, status: 'rejected', state });
         return { status: 'rejected', runId, stage: stage.id };
       }
       // approved → idempotency guard
       if (pending.idempotencyKey && isDone(checkpointDir, runId, pending.idempotencyKey)) {
         log(`↩  stage '${stage.id}' already done (idempotencyKey) — skipping re-execution.`);
-        writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i + 1, status: 'running', state });
+        writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i + 1, status: 'running', state });
         continue;
       }
     }
@@ -252,9 +355,9 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     // ── runner-level failure ──
     if (result.exitCode !== 0) {
       warn(`stage '${stage.id}' runner exit ${result.exitCode}`);
-      const act = onStageFail === 'skip' ? 'continue' : 'stop';
-      writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i, status: act === 'stop' ? 'failed' : 'running', state, failedStage: stage.id });
-      if (act === 'stop') return { status: 'failed', runId, stage: stage.id, reason: `runner exit ${result.exitCode}` };
+      const act = failureAction(onStageFail);
+      writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i, status: stageFailureStatus(act), state, failedStage: stage.id });
+      if (act !== 'continue') return { status: stageFailureStatus(act), runId, stage: stage.id, reason: `runner exit ${result.exitCode}` };
       continue;
     }
 
@@ -263,9 +366,9 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
       const graded = gradeStage(stage.verify, summary, storeRoot);
       log(`   verify: ${graded.verdict}${graded.reason ? ` (${graded.reason})` : ''}`);
       if (graded.verdict !== 'green') {
-        const act = onStageFail === 'skip' ? 'continue' : 'stop';
-        writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i, status: act === 'stop' ? 'failed' : 'running', state, failedStage: stage.id });
-        if (act === 'stop') return { status: 'failed', runId, stage: stage.id, reason: `verify ${graded.verdict}` };
+        const act = failureAction(onStageFail);
+        writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i, status: stageFailureStatus(act), state, failedStage: stage.id });
+        if (act !== 'continue') return { status: stageFailureStatus(act), runId, stage: stage.id, reason: `verify ${graded.verdict}` };
         continue;
       }
     }
@@ -283,10 +386,10 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
       if (fs.existsSync(pf)) writeJsonFile(pf, { ...readJson(pf), status: 'done', doneAt: nowIso() });
     }
 
-    writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: i + 1, status: 'running', state });
+    writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: i + 1, status: 'running', state });
   }
 
-  writeCheckpoint(checkpointDir, { runId, manifestRef: abs, manifestHash, completedStages: stages.length, status: 'done', state });
+  writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: stages.length, status: 'done', state });
   writeJsonFile(path.join(runDir(checkpointDir, runId), 'pipeline-summary.json'), {
     runId, pipeline: manifest.id, status: 'done', stages: stages.length, state, finishedAt: nowIso(),
   });

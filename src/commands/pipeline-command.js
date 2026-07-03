@@ -24,6 +24,15 @@ function defaultCheckpointDir() {
   return path.join(webmcpHome(), 'pipelines');
 }
 
+function checkpointDirFromOptionalManifest(manifestPath) {
+  return manifestPath ? checkpointDirFromManifest(manifestPath) : defaultCheckpointDir();
+}
+
+function statusArgs(rest) {
+  if (rest[0] && rest[0].endsWith('.json')) return { runId: null, manifestPath: rest[0] };
+  return { runId: rest[0] || null, manifestPath: rest[1] || null };
+}
+
 async function pipelineCommand(positional, context) {
   const { options, stdout } = context;
   const sub = positional[0];
@@ -34,7 +43,7 @@ async function pipelineCommand(positional, context) {
       'Usage: pipeline <run|resume|approve|reject|scan|status> [args]\n' +
       '  run <manifest.pipeline.json> [--profile <id>] [--config <path>]\n' +
       '  resume <runId> [manifest]\n' +
-      '  approve <runId>\n  reject <runId>\n  scan [manifest]\n  status [runId]\n');
+      '  approve <runId> [manifest]\n  reject <runId> [manifest]\n  scan [manifest]\n  status [runId] [manifest]\n');
     return 0;
   }
 
@@ -61,7 +70,7 @@ async function pipelineCommand(positional, context) {
     case 'reject': {
       const runId = rest[0];
       if (!runId) throw new CliError(`pipeline ${sub} needs a runId`, { code: 'USAGE_ERROR', exitCode: 2 });
-      const cpDir = defaultCheckpointDir();
+      const cpDir = checkpointDirFromOptionalManifest(rest[1]);
       const stages = approvePending(cpDir, runId, sub === 'approve' ? 'approved' : 'rejected');
       if (options.json) writeJson(stdout, { runId, decision: sub, stages });
       else if (stages.length) {
@@ -72,7 +81,7 @@ async function pipelineCommand(positional, context) {
     }
 
     case 'scan': {
-      const cpDir = rest[0] ? checkpointDirFromManifest(rest[0]) : defaultCheckpointDir();
+      const cpDir = checkpointDirFromOptionalManifest(rest[0]);
       const approved = listPending(cpDir).filter((p) => p.status === 'approved');
       const results = [];
       for (const p of approved) {
@@ -86,8 +95,8 @@ async function pipelineCommand(positional, context) {
     }
 
     case 'status': {
-      const cpDir = defaultCheckpointDir();
-      const runId = rest[0];
+      const { runId, manifestPath } = statusArgs(rest);
+      const cpDir = checkpointDirFromOptionalManifest(manifestPath);
       const pending = listPending(cpDir).filter((p) => !runId || p.runId === runId);
       const runs = [];
       if (fs.existsSync(cpDir)) {
