@@ -12,6 +12,7 @@ const { doctorCommand } = require('./commands/doctor-command');
 const { historyCommand } = require('./commands/history-command');
 const { daemonCommand } = require('./commands/daemon-command');
 const { handoffCommand } = require('./commands/handoff-command');
+const { pipelineCommand } = require('./commands/pipeline-command');
 
 const COMMANDS = {
   run: runCommand,
@@ -23,6 +24,7 @@ const COMMANDS = {
   history: historyCommand,
   handoff: handoffCommand,
   daemon: daemonCommand,
+  pipeline: pipelineCommand,
 };
 
 function getCommandName() {
@@ -54,6 +56,7 @@ Commands:
   history                         List recent workflow runs
   handoff <runId|latest>          Print an AI-readable recovery package for a run
   daemon                          Run enabled scheduled workflows from config
+  pipeline <sub> [args]           Compose workflows: run|resume|approve|reject|scan|status
 
 Common options:
   --config <path>                 Config file path (default: ./dispatcher.config.json)

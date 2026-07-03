@@ -26,8 +26,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_NAME = 'webmcp-workflow-cli';
 const SKILL_SRC = join(ROOT, 'skills', SKILL_NAME);
 const CREATOR_SKILL_NAME = 'webmcp-workflow-creator';
+const PIPELINE_SKILL_NAME = 'webmcp-pipeline-creator';
 // Skills copied into every provider's skills directory.
-const ALL_SKILLS = [SKILL_NAME, CREATOR_SKILL_NAME];
+const ALL_SKILLS = [SKILL_NAME, CREATOR_SKILL_NAME, PIPELINE_SKILL_NAME];
 const BIN_SRC = join(ROOT, 'bin', 'webmcp-workflow-cli.js');
 const INSTALL_HOME = process.env.WORKFLOW_DISPATCHER_INSTALL_HOME || homedir();
 

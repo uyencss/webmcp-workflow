@@ -33,6 +33,7 @@
     "scripts/install-agent.mjs",
     "skills/webmcp-workflow-cli/",
     "skills/webmcp-workflow-creator/",
+    "skills/webmcp-pipeline-creator/",
     "docs/playbook-format.md",
     "README.md",
     "CHANGELOG.md",
