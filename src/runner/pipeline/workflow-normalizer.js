@@ -161,12 +161,20 @@ function normalizeSettings(settings = {}, options = {}) {
  * @returns {Object} Normalized step with guaranteed fields.
  */
 function normalizeStep(step, index, settings) {
+  let timeoutMs = Math.max(1, toNumber(step.timeoutMs, settings.defaultTimeout));
+  // A batch runs several commands under one step timeout — scale it by the
+  // action count when the author left timeoutMs unset (capped at 5 minutes,
+  // mirroring the gateway's proportional batch timeout).
+  if (step.timeoutMs === undefined && step.command === 'batch' && Array.isArray(step.params?.actions)) {
+    timeoutMs = Math.min(timeoutMs * Math.max(1, step.params.actions.length), 300000);
+  }
+
   const normalized = {
     ...step,
     index,
     type: step.type || (step.forEach ? 'forEach' : 'command'),
     critical: step.critical !== false,
-    timeoutMs: Math.max(1, toNumber(step.timeoutMs, settings.defaultTimeout)),
+    timeoutMs,
     retryPolicy: normalizeRetryPolicy(step.retryPolicy, settings.defaultRetryPolicy),
   };
 

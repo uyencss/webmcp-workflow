@@ -1086,9 +1086,22 @@ class WorkflowRunner extends EventEmitter {
    * @param {*} result - Command result that may contain `tabId`.
    */
   updateActiveTab(result) {
-    if (!result || typeof result !== 'object' || result.tabId === undefined || result.tabId === null) return;
-    this.activeTabId = result.tabId;
-    this.context.setBuiltin('__ACTIVE_TAB_ID__', result.tabId);
+    if (!result || typeof result !== 'object') return;
+    let tabId = result.tabId;
+    // Batch envelope carries no top-level tabId; adopt the last tab any
+    // sub-action resolved so later steps target the right tab.
+    if ((tabId === undefined || tabId === null) && Array.isArray(result.results)) {
+      for (let i = result.results.length - 1; i >= 0; i--) {
+        const subTabId = result.results[i]?.result?.tabId;
+        if (typeof subTabId === 'number') {
+          tabId = subTabId;
+          break;
+        }
+      }
+    }
+    if (tabId === undefined || tabId === null) return;
+    this.activeTabId = tabId;
+    this.context.setBuiltin('__ACTIVE_TAB_ID__', tabId);
   }
 
   /* ── Post-step wait ──────────────────────────────────── */

@@ -131,6 +131,41 @@ function validateCommandUsage(commandName, params, label, errors, warnings, opti
 
   errors.push(...validateCommandParams(commandName, params || {}).map((message) => `${label}: ${message}`));
 
+  // Deep-validate batch sub-actions against the same catalog so typos, missing
+  // required params, empty batches, and nesting are caught before a run.
+  if (commandName === 'batch' && Array.isArray(params?.actions)) {
+    if (params.actions.length === 0) {
+      errors.push(`${label}: batch "actions" must be a non-empty array`);
+    }
+    params.actions.forEach((action, i) => {
+      const sub = `${label} action[${i}]`;
+      if (!isObject(action) || typeof action.method !== 'string' || !action.method) {
+        errors.push(`${sub}: each action needs a string "method"`);
+        return;
+      }
+      if (action.method === 'batch') {
+        errors.push(`${sub}: nested batch is not allowed`);
+        return;
+      }
+      if (action.params !== undefined && !isObject(action.params)) {
+        errors.push(`${sub}: params must be an object`);
+        return;
+      }
+      if (action.method === 'delay' || action.method === 'wait') return; // pseudo-actions
+      if (isUnsupportedCommand(action.method)) {
+        errors.push(`${sub}: command "${action.method}" is unsupported. ${getUnsupportedReason(action.method)}`);
+        return;
+      }
+      if (!hasCommand(action.method)) {
+        const message = `${sub}: unknown command "${action.method}"`;
+        if (options.allowUnknownCommand) warnings.push(`${message}; passthrough enabled`);
+        else errors.push(message);
+        return;
+      }
+      errors.push(...validateCommandParams(action.method, action.params || {}).map((m) => `${sub}: ${m}`));
+    });
+  }
+
   const command = getCommand(commandName);
   if (command?.group === 'runner' && params && Object.keys(params).length === 0 && commandName !== 'wait' && commandName !== 'delay') {
     warnings.push(`${label}: runner command "${commandName}" has no parameters`);

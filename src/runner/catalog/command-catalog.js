@@ -26,6 +26,7 @@
 const COMMAND_GROUPS = [
   { id: 'tabs', label: 'Tab management' },
   { id: 'page', label: 'Page interaction' },
+  { id: 'orchestration', label: 'Multi-action orchestration' },
   { id: 'cdp', label: 'Chrome DevTools Protocol' },
   { id: 'webmcp', label: 'Page WebMCP tools' },
   { id: 'vision', label: 'AI observation' },
@@ -75,6 +76,14 @@ const COMMAND_DEFINITIONS = [
   ['evaluateJS', { group: 'cdp', description: 'Run JavaScript in the page (MAIN world) and get the result back. Your code runs inside an async IIFE, so `await` works and a single expression is auto-returned — `document.title`, `[...document.querySelectorAll("table tr")].map(tr => tr.innerText)`, or a nested `(() => {...})()` all resolve to their value without needing an explicit `return`. Multi-statement bodies (declarations, loops, control flow) still need an explicit top-level `return`. Prefer this (or querySelectorAll) over ARIA snapshots for bulk row/table/data extraction, since ARIA snapshots target interactive controls and may omit dense tabular rows, tooltips, or chart internals. Supports optional iframe targeting via frame.', requiredParams: ['code'], optionalParams: ['frame'] }],
   ['executeCDP', { group: 'cdp', requiredParams: ['method'], optionalParams: ['params'] }],
   ['screenshot', { group: 'cdp', optionalParams: ['fullPage'] }],
+
+  /* ── Multi-action orchestration ──────────────────────── */
+  ['batch', {
+    group: 'orchestration',
+    description: 'Run several gateway commands sequentially in one round-trip (handled inside the extension). params.actions is an array of { method, params }. Threads the active tab across actions; onError "continue" (default) or "stop-on-error"; screenshotAfter captures after each action. NOTE: per-action guard/retry/captureAs are NOT available — use real steps when you need those.',
+    requiredParams: ['actions'],
+    optionalParams: ['onError', 'screenshotAfter', 'tabId', 'actionTimeoutMs'],
+  }],
 
   /* ── Page WebMCP tools ───────────────────────────────── */
   ['webmcp.listTools', { group: 'webmcp', optionalParams: ['frame'] }],

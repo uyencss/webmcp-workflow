@@ -5,6 +5,38 @@ All notable changes to `@gyga-browser/webmcp-workflow` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 - 2026-07-04
+
+### Added
+
+- **`batch` command** — run several gateway commands in a single round-trip,
+  executed inside the extension. Collapses a tightly-coupled micro-sequence
+  (`type → click → settle → read`) into one call, cutting round-trips, latency,
+  and run-log noise.
+  - New `orchestration` command group. `batch` takes
+    `actions: [{ method, params }]` plus `onError` (`"continue"` default /
+    `"stop-on-error"`), `screenshotAfter`, `tabId`, and `actionTimeoutMs`. The
+    `delay`/`wait` pseudo-actions are valid inside `actions`.
+  - The runner threads the active tab across a batch — it adopts the last
+    sub-action `tabId` so later steps target the right tab.
+  - Batch step timeout auto-scales by action count (capped at 5 minutes) when
+    `timeoutMs` is not set explicitly, mirroring the gateway's proportional
+    batch timeout.
+  - `validate` deep-checks batch actions: unknown inner `method`, missing inner
+    required params, an empty `actions` array, and nested batch are all rejected
+    before a run.
+  - `captureAs` on a batch stores the whole envelope; read a specific action via
+    `{{VAR.results.<i>.result}}`. Sub-action results are not auto-unwrapped.
+  - Skill `webmcp-workflow-creator` documents batch vs. real steps (§5A);
+    runnable example `.examples/workflows/gemini/chat_batch.json`.
+  - Requires the extension/gateway `batch` handler (from
+    `@gyga-browser/webmcp-browser-automation-kit`) to execute a run.
+
+### Note
+
+- This release also ships the pipeline orchestration layer and the doctor
+  Chrome Web Store link that landed on `main` after 0.4.0.
+
 ## 0.4.0 - 2026-07-02
 
 ### Added

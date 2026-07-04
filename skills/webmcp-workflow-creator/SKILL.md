@@ -1,6 +1,6 @@
 ---
 name: webmcp-workflow-creator
-description: Author WebMCP workflow JSON that runs through `webmcp-workflow` (the webmcp-workflow-cli runner). Use when creating, designing, or debugging a workflow file — scraping, form-filling, multi-step browser automation, looping over keywords/pages/items, extracting structured data, or choosing between DOM interaction and calling a site's underlying API. Covers the `type`/`command`/`strategy`/`guard`/`wait`/`captureAs`/`forEach` schema, template interpolation, the API-first + `forEach` + pagination decision rules, and fast reading with `getPageText`.
+description: Author WebMCP workflow JSON that runs through `webmcp-workflow` (the webmcp-workflow-cli runner). Use when creating, designing, or debugging a workflow file — scraping, form-filling, multi-step browser automation, looping over keywords/pages/items, extracting structured data, or choosing between DOM interaction and calling a site's underlying API. Covers the `type`/`command`/`strategy`/`guard`/`wait`/`captureAs`/`forEach`/`batch` schema, template interpolation, the API-first + `forEach` + pagination decision rules, batching a micro-sequence into one round-trip, and fast reading with `getPageText`.
 ---
 
 # WebMCP Workflow Creator
@@ -137,7 +137,8 @@ result is ~42 `fetch` calls inside page-JS.
 |---|---|
 | `id` | Unique step id (referenced by routes and `{{steps.<id>}}`). |
 | `type` | `"command"` (default) or `"forEach"`. Auto-detected if omitted. |
-| `command` + `params` | A WebMCP command (`newTab`, `navigate`, `evaluateJS`, `getPageText`, `screenshot`, `waitForSelector`, `clickByRef`, ...). |
+| `command` + `params` | A WebMCP command (`newTab`, `navigate`, `evaluateJS`, `getPageText`, `screenshot`, `waitForSelector`, `clickByRef`, `batch`, ...). |
+| `command: "batch"` | Run several commands in ONE round-trip (§5A). No **per-action** guard/retry/capture. |
 | `strategy` | `"ai-vision"` or `"aria-ref"` for semantic click/type without selectors. |
 | `guard` | Precondition; skip (non-critical) or fail if unmet. Types: `element-exists`, `element-absent`, `url-matches`, `expression`. |
 | `wait` | Post-step delay: `{ "type": "delay", "ms": 2000 }` (or a bare number). |
@@ -302,6 +303,72 @@ the `href` string, not `new URL(...)`. Full example:
 
 ---
 
+## 5A. `batch`: collapse a micro-sequence into one round-trip
+
+A `batch` step runs several gateway commands **in one round-trip**, executed
+inside the extension. Use it to fuse a tightly-coupled, deterministic
+micro-sequence — `type → click → settle → read` — that has **no per-action
+branching**. It cuts HTTP round-trips, latency, and run-log noise. The runner
+already sequences steps, so batch is only worth it for these tight clusters, not
+as a general replacement for steps.
+
+```json
+{
+  "id": "type-and-send",
+  "command": "batch",
+  "params": {
+    "onError": "stop-on-error",
+    "actions": [
+      { "method": "evaluateJS", "params": { "code": "/* insert {{PROMPT}} into the composer */ return { ok: true };" } },
+      { "method": "delay", "params": { "ms": 500 } },
+      { "method": "evaluateJS", "params": { "code": "/* click the send button */ return { ok: true };" } },
+      { "method": "delay", "params": { "ms": 1000 } }
+    ]
+  }
+}
+```
+
+**`params`**
+
+| Prop | Meaning |
+|---|---|
+| `actions` ✅ | Ordered `[{ method, params }]`. `method` is any workflow command; `params` may use `{{templates}}`. |
+| `onError` | `"continue"` (default, run all) or `"stop-on-error"` (halt on first failure; partial results still returned). |
+| `screenshotAfter` | Screenshot after every action (default `false`; costly — leave off unless debugging). |
+| `tabId` | Default tab for every action (the runner injects the active tab automatically). |
+
+`delay`/`wait` are valid pseudo-actions inside `actions`
+(`{ "method": "delay", "params": { "ms": 500 } }`).
+
+**batch vs. real steps — the decision that matters:**
+
+| If you need per-action `guard` / `retry` / `captureAs` / `onSuccess` / `forEach` | If it's a deterministic `type→click→wait→read` with no branching |
+|---|---|
+| Use **real steps** (one per action) | Use **batch** (one round-trip) |
+
+The batch **as a whole** still gets step-level `guard`, `retry`, `captureAs`, and
+routing — you just cannot attach them to *individual* actions.
+
+**Reading a value back.** `captureAs` on a batch stores the whole envelope;
+index into `results` (0-based):
+
+```jsonc
+"captureAs": "CHAT"
+// later:  "{{CHAT.results.3.result.text}}"   // the 4th action's result
+```
+
+Sub-action results are **not** auto-unwrapped like a top-level capture, so a
+page-tool / `webmcp.invokeTool` result inside a batch stays raw JSON text.
+Rule of thumb: **batch the *action* part; capture the *value you consume* with a
+normal following step** (a `getPageText`/`evaluateJS` after the batch). Runnable
+example: [`.examples/workflows/gemini/chat_batch.json`](../../.examples/workflows/gemini/chat_batch.json).
+
+**Never** nest a `batch` in a `batch`, or mix `forEach` with `batch`. `validate`
+rejects an unknown inner `method`, a missing inner required param, and an empty
+`actions` array.
+
+---
+
 ## 6. Reading pages fast: prefer `getPageText`
 
 When a step needs to **read text** (an article, a post, a profile, a
@@ -392,6 +459,9 @@ containers still beats a snapshot.
 | Selector breaks on SPA | Use `getAriaSnapshot` + `clickByRef`, or the site API. |
 | Hardcoded page/item count misses new data as the site grows | Don't hardcode the bound. Add a discovery step that reads the real bound and feed `forEach.items` via `{{VAR}}`; add an empty-page sentinel (§5). |
 | `URL is not a constructor` inside `evaluateJS` | The site shadows `window.URL`. Parse page numbers with a regex on the `href` string instead of `new URL(...)`. |
+| Needed a value from a *middle* batch action downstream | Batch sub-results aren't auto-unwrapped. Capture the value with a real step after the batch, or read `{{VAR.results.<i>.result}}` and parse it. |
+| Needed per-action retry/guard but used `batch` | Batch is all-or-nothing at the step level. Split the actions into real steps (§5A). |
+| `batch "actions" must be a non-empty array` / `unknown command` in an action | `validate` deep-checks batch actions. Fix the inner `method`/params or remove the empty batch. |
 
 ---
 
