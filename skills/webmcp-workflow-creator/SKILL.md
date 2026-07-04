@@ -7,7 +7,8 @@ description: Author WebMCP workflow JSON that runs through `webmcp-workflow` (th
 
 This skill teaches you to **write workflow JSON** for the WebMCP workflow runner
 (`webmcp-workflow`). The sibling skill `webmcp-workflow-cli` covers *running*
-files; this one covers *designing* them.
+files; this one covers *designing* them. Once a workflow is verified, hand it to
+`webmcp-store-curator` to file it into the store (workbench pack → promote).
 
 A workflow drives a real logged-in Chrome tab through the WebMCP gateway. Steps
 run **sequentially**; each step is one gateway command (or one strategy, or a

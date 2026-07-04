@@ -42,7 +42,9 @@ webmcp-workflow-store/
   _cross-site/pipelines/<name>.pipeline.json  # the pipeline manifest (this skill)
 ```
 
-Stage `workflow` / `verify` paths are **relative to the store root**.
+Stage `workflow` / `verify` paths are **relative to the store root**. To draft a
+new pipeline before it lands, author it as a `drafts/pipelines/<id>/` pack and
+promote it with `webmcp-store-curator`.
 
 ---
 
