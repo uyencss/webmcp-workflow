@@ -5,6 +5,16 @@ All notable changes to `@gyga-browser/webmcp-workflow` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 - 2026-07-04
+
+### Added
+
+- `activateTab` added to the runner command catalog, mirroring the new
+  `webmcp-browser-kit` command. Workflow steps can now bring an existing tab to
+  the foreground via `{ "command": "activateTab", "params": { "tabId": ... } }`;
+  the runner adopts the returned `tabId` so later steps target the activated
+  tab. `tabId` is required (validation error when omitted).
+
 ## 0.5.1 - 2026-07-04
 
 ### Changed

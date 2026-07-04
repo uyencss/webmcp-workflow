@@ -38,7 +38,7 @@ different tools:
 
 **Critical distinction — not every browser tool is a workflow step.** A workflow
 step's `command` must be in the runner's command catalog: `newTab`, `navigate`,
-`evaluateJS`, `getPageText`, `readPage`, `getAriaSnapshot`,
+`activateTab`, `evaluateJS`, `getPageText`, `readPage`, `getAriaSnapshot`,
 `clickByRef`/`typeByRef`/`hoverByRef`/`selectByRef`, `waitForSelector`,
 `waitForStable`, `screenshot`, `scroll`, `pressKey`, etc. The **page-registered
 tools** (`start_network_capture`, `wait_for_network_response`,
