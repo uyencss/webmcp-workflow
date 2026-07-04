@@ -100,6 +100,9 @@ function printDoctor(stdout, result) {
   } else {
     stdout.write('Selected profile: auto/single profile\n');
   }
+  if (!result.health.extensionConnected && result.extension?.chromeWebStoreUrl) {
+    stdout.write(`Install extension: ${result.extension.chromeWebStoreUrl}\n`);
+  }
   stdout.write(`Ping: ${result.ok ? 'ok' : `failed (${result.pingError.code})`}\n`);
   if (result.pingError) stdout.write(`Error: ${result.pingError.message}\n`);
 }

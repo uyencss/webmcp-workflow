@@ -3,6 +3,7 @@ const { readEnv } = require('../env-loader');
 const { checkGateway } = require('../gateway-health');
 const { assertProfileAvailable, resolveGateway, resolveProfile } = require('../profile-resolver');
 const { printDoctor, writeJson } = require('../output');
+const { WEBMCP_EXTENSION_ID, WEBMCP_EXTENSION_STORE_URL } = require('../extension-info');
 
 async function doctorCommand(args, context) {
   const { options, stdout } = context;
@@ -15,7 +16,14 @@ async function doctorCommand(args, context) {
   });
   const result = await checkGateway(gateway, profile.profileId);
   assertProfileAvailable(result.health, profile.profileId);
-  const payload = { ...result, profile };
+  const payload = {
+    ...result,
+    profile,
+    extension: {
+      id: WEBMCP_EXTENSION_ID,
+      chromeWebStoreUrl: WEBMCP_EXTENSION_STORE_URL,
+    },
+  };
 
   if (options.json) writeJson(stdout, payload);
   else printDoctor(stdout, payload);

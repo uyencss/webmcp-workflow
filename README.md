@@ -73,13 +73,19 @@ Both must be running before any `run` command will work.
 
 ### 1. Install the Chrome extension
 
-Print the path to the bundled unpacked extension:
+Install **WebMCP Tools Provider** from the Chrome Web Store in the Chrome profile
+you will automate:
+
+<https://chromewebstore.google.com/detail/webmcp-tools-provider/lbodkmkjbcemodklopcfdmpjomdoapae>
+
+For local extension development only, you can still print the bundled unpacked
+extension path:
 
 ```bash
 npx -y @gyga-browser/webmcp-browser-automation-kit extension-path
 ```
 
-Then load it into Chrome:
+Then load that development build into Chrome:
 
 1. Open `chrome://extensions`.
 2. Enable **Developer mode**.
