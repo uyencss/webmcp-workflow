@@ -336,6 +336,7 @@ as a general replacement for steps.
 | `onError` | `"continue"` (default, run all) or `"stop-on-error"` (halt on first failure; partial results still returned). |
 | `screenshotAfter` | Screenshot after every action (default `false`; costly — leave off unless debugging). |
 | `tabId` | Default tab for every action (the runner injects the active tab automatically). |
+| `actionTimeoutMs` | Per-action timeout inside the extension (default 60000). One hung action fails on its own instead of stalling the whole batch. |
 
 `delay`/`wait` are valid pseudo-actions inside `actions`
 (`{ "method": "delay", "params": { "ms": 500 } }`).
