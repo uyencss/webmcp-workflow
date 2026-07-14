@@ -5,6 +5,14 @@ All notable changes to `@gyga-browser/webmcp-workflow` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 - 2026-07-14
+
+### Added
+
+- **Pipeline Profile Routing** — support routing individual pipeline stages to separate browser profiles via the `profile` field in stage manifests. This enables orchestrating multi-site steps authenticated across different profiles in a single pipeline.
+- **Pipeline Runtime Variables Override** — allow runtime variables passed via CLI `--var` to override default pipeline manifest variables at creation time.
+- **Stage Validation** — validate that stage `profile` options, when specified, are non-empty strings before pipeline execution.
+
 ## 0.5.2 - 2026-07-04
 
 ### Added

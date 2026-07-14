@@ -137,6 +137,9 @@ function validateManifest(manifest) {
     }
     if (!stage.id || typeof stage.id !== 'string') errors.push(`stage ${label} needs a string id`);
     if (!stage.workflow || typeof stage.workflow !== 'string') errors.push(`stage ${label} needs a workflow path`);
+    if (stage.profile !== undefined && (typeof stage.profile !== 'string' || !stage.profile.trim())) {
+      errors.push(`stage ${label} profile must be a non-empty string when provided`);
+    }
 
     const risk = stageRisk(stage);
     if (!validRisks.has(risk)) {
@@ -162,6 +165,7 @@ function buildStageAnchors(stages, storeRoot) {
       id: stage.id || null,
       workflow: stage.workflow || null,
       workflowHash: hashFile(workflowPath),
+      profile: stage.profile || null,
       verify: typeof stage.verify === 'string' ? stage.verify : null,
       verifyHash: hashFile(verifyPath),
     };
@@ -282,7 +286,9 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     log(`▶ resume pipeline ${manifest.id} runId=${runId} from stage #${startIndex}`);
   } else {
     runId = `${manifest.id}-${shortId()}`;
-    state = { PIPELINE: manifest.variables || {} };
+    // Pipeline inputs follow the same override contract as workflow inputs:
+    // command-line variables win over manifest defaults at run creation time.
+    state = { PIPELINE: { ...(manifest.variables || {}), ...(cliOptions.variables || {}) } };
     startIndex = 0;
     if (manifestErrors.length) {
       writeCheckpoint(checkpointDir, { ...checkpointBase, runId, completedStages: 0, status: 'failed', state, errors: manifestErrors });
@@ -344,7 +350,15 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     log(`\n─ stage #${i} '${stage.id}' → ${stage.workflow}  [risk:${stage.risk || 'read-only'}]`);
     const resolved = resolveWorkflow(workflowAbs, {
       config,
-      options: { ...cliOptions, variables: hydrated, cwd: storeRoot },
+      // A stage profile intentionally overrides the CLI profile. This lets one
+      // durable pipeline safely orchestrate services authenticated in separate
+      // browser profiles; omit it to retain the CLI/env/default resolution.
+      options: {
+        ...cliOptions,
+        ...(stage.profile ? { profile: stage.profile } : {}),
+        variables: hydrated,
+        cwd: storeRoot,
+      },
       env,
     });
     const result = await executeWorkflow(resolved, {

@@ -142,7 +142,7 @@ defines, same as workflow-creator teaches the workflow schema).
 
 **Scope of the new skill:**
 - The `*.pipeline.json` schema (§5): `stages`, `with`, `verify`, `captureAs`, `risk`, `gate`,
-  `idempotencyKey`, `onStageFail`.
+  `idempotencyKey`, `onStageFail`, and optional per-stage `profile` routing.
 - Inter-stage state handoff rules (`{{PIPELINE.x}}`, `{{<captureAs>.path}}`).
 - When to gate: any `outward-facing` stage → `gate: human`; protect the account over the workflow.
 - Verify-as-gate choice: point at a `*.verify.json` vs an inline `artifact` check.

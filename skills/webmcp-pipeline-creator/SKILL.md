@@ -89,6 +89,7 @@ promote it with `webmcp-store-curator`.
 | `with` | maps state → the child's `variables`. Values are interpolated (§3). |
 | `verify` | the gate. Either a path to a `*.verify.json` (grades the run's `summary` via signals) or an inline `{ "type":"artifact", "path":"$.filePath", "exists":true }` (checks the child's `FINAL_REPORT`). Non-green → `onStageFail`. |
 | `captureAs` | stores the child's `FINAL_REPORT` (or all outputs) under this name in pipeline state. |
+| `profile` | optional browser profile ID or configured alias for this stage. It overrides the pipeline CLI `--profile`, allowing one pipeline to safely compose sites authenticated in different profiles. |
 | `risk` | `read-only` \| `generate` \| `outward-facing` \| `destructive` — drives the safety policy (§4). |
 | `gate` | `"human"` on an outward-facing stage → the pipeline pauses for approval. |
 | `idempotencyKey` | an interpolated string; a resume/re-scan never re-runs a stage whose key is already recorded as done. Set it on outward-facing stages. |

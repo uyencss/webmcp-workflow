@@ -187,6 +187,86 @@ test('inline artifact verify resolves JSONPath against child FINAL_REPORT', asyn
   assert.equal(result.status, 'done');
 });
 
+test('pipeline routes each stage through its declared browser profile', async () => {
+  const routedProfiles = [];
+  const { runPipeline } = loadPipelineRunnerWithMock(async (resolved) => {
+    routedProfiles.push(resolved.profile.profileId);
+    return {
+      exitCode: 0,
+      summary: { context: { outputs: { FINAL_REPORT: { ok: true } } } },
+    };
+  });
+  const storeRoot = makeStore();
+  const manifestPath = path.join(storeRoot, '_cross-site', 'pipelines', 'profiles.pipeline.json');
+  writeJson(manifestPath, {
+    id: 'profiles',
+    stages: [
+      { id: 'chatgpt', workflow: 'sites/demo/workflows/stage.json', profile: 'chatgpt-profile' },
+      { id: 'gemini', workflow: 'sites/demo/workflows/stage.json', profile: 'gemini-profile' },
+    ],
+  });
+
+  const result = await runPipeline({
+    manifestPath,
+    cliOptions: { profile: 'fallback-profile' },
+    context: makeContext(),
+  });
+
+  assert.equal(result.status, 'done');
+  assert.deepEqual(routedProfiles, ['chatgpt-profile', 'gemini-profile']);
+});
+
+test('pipeline rejects an empty stage profile before executing', async () => {
+  const calls = [];
+  const { runPipeline } = loadPipelineRunnerWithMock(async () => {
+    calls.push('execute');
+    return { exitCode: 0, summary: { context: { outputs: { FINAL_REPORT: { ok: true } } } } };
+  });
+  const storeRoot = makeStore();
+  const manifestPath = path.join(storeRoot, '_cross-site', 'pipelines', 'invalid-profile.pipeline.json');
+  writeJson(manifestPath, {
+    id: 'invalid-profile',
+    stages: [{ id: 'chatgpt', workflow: 'sites/demo/workflows/stage.json', profile: '   ' }],
+  });
+
+  const result = await runPipeline({ manifestPath, context: makeContext() });
+
+  assert.equal(result.status, 'failed');
+  assert.match(result.reason, /profile/);
+  assert.deepEqual(calls, []);
+});
+
+test('pipeline runtime variables override manifest defaults for every stage', async () => {
+  const prompts = [];
+  const { runPipeline } = loadPipelineRunnerWithMock(async (resolved) => {
+    prompts.push(resolved.variables.PROMPT);
+    return {
+      exitCode: 0,
+      summary: { context: { outputs: { FINAL_REPORT: { ok: true } } } },
+    };
+  });
+  const storeRoot = makeStore();
+  const manifestPath = path.join(storeRoot, '_cross-site', 'pipelines', 'runtime-vars.pipeline.json');
+  writeJson(manifestPath, {
+    id: 'runtime-vars',
+    variables: { PROMPT: '' },
+    stages: [{
+      id: 'research',
+      workflow: 'sites/demo/workflows/stage.json',
+      with: { PROMPT: '{{PIPELINE.PROMPT}}' },
+    }],
+  });
+
+  const result = await runPipeline({
+    manifestPath,
+    cliOptions: { variables: { PROMPT: 'Research this niche' } },
+    context: makeContext(),
+  });
+
+  assert.equal(result.status, 'done');
+  assert.deepEqual(prompts, ['Research this niche']);
+});
+
 test('pipeline approve accepts a manifest to resolve custom checkpointDir', async () => {
   const { runPipeline } = loadPipelineRunnerWithMock(async () => {
     throw new Error('outward-facing gate should pause before execution');
@@ -221,4 +301,3 @@ test('pipeline approve accepts a manifest to resolve custom checkpointDir', asyn
   const pending = JSON.parse(readFileSync(path.join(checkpointDir, 'pending', `${runResult.runId}@publish.json`), 'utf8'));
   assert.equal(pending.status, 'approved');
 });
-
