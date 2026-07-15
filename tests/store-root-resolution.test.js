@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = require('node:fs');
+const { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -69,6 +69,45 @@ test('an in-tree manifest still resolves by upward walk with no flag or env', ()
   const manifest = path.join(dir, 'pipeline.json');
   writeFileSync(manifest, '{"id":"x","stages":[]}\n');
   assert.equal(findStoreRoot(manifest, { env: {} }), path.resolve(store));
+});
+
+test('the store is found as a dependency of the package that owns the manifest', () => {
+  // The automation-repo case: no flag, no env — just `dependencies`. Resolution
+  // must start from the MANIFEST, not from this runner's own module location.
+  // Resolving from the runner searched the runner's install tree and reported
+  // "not installed" for a store that was installed, one directory away.
+  const repo = tmp('webmcp-automation-repo-');
+  writeFileSync(path.join(repo, 'package.json'), JSON.stringify({ name: 'automations', version: '1.0.0' }));
+
+  const dep = path.join(repo, 'node_modules', '@gyga-browser', 'webmcp-site-store');
+  mkdirSync(path.join(dep, 'sites'), { recursive: true });
+  writeFileSync(
+    path.join(dep, 'package.json'),
+    JSON.stringify({ name: '@gyga-browser/webmcp-site-store', version: '0.1.0' }),
+  );
+
+  const dir = path.join(repo, 'automations', 'gemini-to-suno');
+  mkdirSync(dir, { recursive: true });
+  const manifest = path.join(dir, 'pipeline.json');
+  writeFileSync(manifest, '{"id":"x","stages":[]}\n');
+
+  // Compare realpaths: Node's resolver returns the real path, and on macOS the
+  // tmpdir (/var/folders/...) is a symlink to /private/var/folders/....
+  assert.equal(realpathSync(findStoreRoot(manifest, { env: {} })), realpathSync(dep));
+});
+
+test('an explicit store root still wins over an installed dependency', () => {
+  const repo = tmp('webmcp-automation-repo-');
+  const dep = path.join(repo, 'node_modules', '@gyga-browser', 'webmcp-site-store');
+  mkdirSync(path.join(dep, 'sites'), { recursive: true });
+  writeFileSync(path.join(dep, 'package.json'), JSON.stringify({ name: '@gyga-browser/webmcp-site-store' }));
+  const dir = path.join(repo, 'automations', 'x');
+  mkdirSync(dir, { recursive: true });
+  const manifest = path.join(dir, 'pipeline.json');
+  writeFileSync(manifest, '{"id":"x","stages":[]}\n');
+
+  const override = makeStore('webmcp-store-override-');
+  assert.equal(findStoreRoot(manifest, { storeRootOption: override, env: {} }), path.resolve(override));
 });
 
 // ── the failure that used to be silent ───────────────────────────────────────

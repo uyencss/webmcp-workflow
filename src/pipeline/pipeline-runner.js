@@ -15,6 +15,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const Module = require('module');
 const { execFileSync } = require('child_process');
 
 const { CliError } = require('../errors');
@@ -130,11 +131,17 @@ function walkUpForStoreRoot(manifestPath) {
   return null;
 }
 
-// Resolve the store as an installed dependency. This is what lets an automation
-// repo keep pipelines outside the store tree and pin the store via npm.
-function resolveStoreFromPackage() {
+// Resolve the store as an installed dependency of whoever owns the manifest.
+//
+// This resolves from the MANIFEST's directory, not the runner's. Node resolves
+// `node_modules` upward from the requiring module, so a plain `require.resolve`
+// here would search the runner's own install tree — where the automation repo's
+// dependency is, correctly, absent. The store is a dependency of the automation
+// repo, so that repo is where the lookup has to start.
+function resolveStoreFromPackage(manifestPath) {
   try {
-    return path.dirname(require.resolve(`${SITE_STORE_PACKAGE}/package.json`));
+    const requireFromManifest = Module.createRequire(path.resolve(manifestPath));
+    return path.dirname(requireFromManifest.resolve(`${SITE_STORE_PACKAGE}/package.json`));
   } catch {
     return null;
   }
@@ -177,9 +184,9 @@ function findStoreRoot(manifestPath, { storeRootOption = null, env = {} } = {}) 
   }
   attempts.push('--store-root (not set)', 'WEBMCP_STORE_ROOT (not set)');
 
-  const fromPackage = resolveStoreFromPackage();
+  const fromPackage = resolveStoreFromPackage(manifestPath);
   if (fromPackage && looksLikeStoreRoot(fromPackage)) return fromPackage;
-  attempts.push(`${SITE_STORE_PACKAGE} (not installed)`);
+  attempts.push(`${SITE_STORE_PACKAGE} (not a dependency of the pipeline's package)`);
 
   const fromWalk = walkUpForStoreRoot(manifestPath);
   if (fromWalk) return fromWalk;
