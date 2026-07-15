@@ -59,7 +59,10 @@ Commands:
   pipeline <sub> [args]           Compose workflows: run|resume|approve|reject|scan|status
 
 Common options:
-  --config <path>                 Config file path (default: ./dispatcher.config.json)
+  --config <path>                 Config file path (default: ./dispatcher.config.json,
+                                  then ~/.webmcp/dispatcher.config.json)
+  --store-root <path>             Site store root for pipeline stage paths. Needed
+                                  when a pipeline lives outside the store tree
   --gateway <name-or-url>         Gateway name from config or explicit /api URL
   --profile <id-or-alias>         Gateway profile id or configured profile alias
   --var KEY=VALUE                 Runtime variable override. Repeatable
@@ -180,6 +183,11 @@ function parseArgs(args, cwd = process.cwd()) {
     }
     if (arg === '--config') {
       result.options.config = readOptionValue(args, i, '--config');
+      i += 1;
+      continue;
+    }
+    if (arg === '--store-root') {
+      result.options.storeRoot = readOptionValue(args, i, '--store-root');
       i += 1;
       continue;
     }

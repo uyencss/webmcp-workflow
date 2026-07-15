@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { CliError } = require('./errors');
 const { defaultHealthUrl, toAbsolutePath } = require('./paths');
-const { getDefaultHistoryDir } = require('./home');
+const { getDefaultHistoryDir, getWebmcpHome } = require('./home');
 
 const DEFAULT_GATEWAY_NAME = 'local';
 const DEFAULT_GATEWAY_URL = 'http://localhost:7865/api';
@@ -170,11 +170,30 @@ function validateConfig(config) {
   return errors;
 }
 
+const CONFIG_BASENAME = 'dispatcher.config.json';
+
+// Where an implicit config may live, in priority order. `gateways.<name>.profiles`
+// is a per-machine alias map (alias → real Chrome profileId), so it needs a home
+// on the machine — not in a store/automation repo that is published and shared.
+// The home entry is what lets a pipeline outside the store tree still resolve
+// `"profile": "gemini"`. See
+// docs/20260715_store_root_and_config_decoupling_plan.md.
+function implicitConfigPaths(cwd) {
+  return [path.resolve(cwd, CONFIG_BASENAME), path.join(getWebmcpHome(), CONFIG_BASENAME)];
+}
+
 function loadConfig(options = {}) {
   const env = options.env || {};
   const cwd = options.cwd || process.cwd();
   const explicitPath = options.configPath;
-  const configPath = explicitPath ? toAbsolutePath(explicitPath, cwd) : path.resolve(cwd, 'dispatcher.config.json');
+  // An explicit path is used as-is and must exist (checked below). Otherwise
+  // take the first implicit path that exists; when none do, keep the cwd path so
+  // error messages and `configDir` resolution stay stable, and fall through to
+  // defaults without throwing.
+  const candidates = implicitConfigPaths(cwd);
+  const configPath = explicitPath
+    ? toAbsolutePath(explicitPath, cwd)
+    : candidates.find((p) => fs.existsSync(p)) || candidates[0];
   let raw = {};
   let exists = false;
 

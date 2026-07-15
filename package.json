@@ -37,6 +37,7 @@
     "docs/playbook-format.md",
     "docs/20260703_pipeline_orchestration_layer.md",
     "docs/20260703_pipeline_orchestration_hardening_plan.md",
+    "docs/20260715_store_root_and_config_decoupling_plan.md",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"

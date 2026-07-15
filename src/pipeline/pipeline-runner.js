@@ -17,6 +17,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
+const { CliError } = require('../errors');
 const { loadConfig } = require('../config-loader');
 const { readEnv } = require('../env-loader');
 const { resolveWorkflow } = require('../workflow-registry');
@@ -104,15 +105,91 @@ function hydrateWith(withObj, state) {
 }
 
 // Walk up from the manifest to the store root (nearest ancestor containing `sites/`).
-function findStoreRoot(manifestPath) {
+// The site store package a pipeline resolves `sites/...` stage paths against.
+const SITE_STORE_PACKAGE = '@gyga-browser/webmcp-site-store';
+
+// A directory is a site store when it holds `sites/`. Stage paths are all
+// store-relative (`sites/<site>/workflows/<id>.json`), so this is the whole
+// contract.
+function looksLikeStoreRoot(dir) {
+  return Boolean(dir) && fs.existsSync(path.join(dir, 'sites'));
+}
+
+// Walk up from a manifest looking for a store root. This is how an in-tree
+// pipeline (`<store>/_cross-site/pipelines/x/pipeline.json`) finds its store
+// with no flag, and it must keep working: it is the only strategy that applies
+// before automations move to their own repo.
+function walkUpForStoreRoot(manifestPath) {
   let dir = path.dirname(path.resolve(manifestPath));
   for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(dir, 'sites'))) return dir;
+    if (looksLikeStoreRoot(dir)) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return path.dirname(path.resolve(manifestPath));
+  return null;
+}
+
+// Resolve the store as an installed dependency. This is what lets an automation
+// repo keep pipelines outside the store tree and pin the store via npm.
+function resolveStoreFromPackage() {
+  try {
+    return path.dirname(require.resolve(`${SITE_STORE_PACKAGE}/package.json`));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the site store root for a pipeline manifest, first match wins:
+ *
+ *   1. --store-root <path>
+ *   2. $WEBMCP_STORE_ROOT
+ *   3. the installed `@gyga-browser/webmcp-site-store` package
+ *   4. an upward walk from the manifest for a `sites/` directory
+ *
+ * Throws when every strategy misses. It deliberately does NOT fall back to the
+ * manifest's own directory: that fallback made a pipeline outside a store tree
+ * resolve `sites/suno/workflows/create-song.json` against the automation folder
+ * and die as "workflow not found" — naming the wrong repo, at the wrong stage,
+ * for a dependency problem. See docs/20260715_store_root_and_config_decoupling_plan.md.
+ */
+function findStoreRoot(manifestPath, { storeRootOption = null, env = {} } = {}) {
+  const attempts = [];
+  const explicit = [
+    { source: '--store-root', value: storeRootOption },
+    { source: 'WEBMCP_STORE_ROOT', value: env.storeRoot },
+  ];
+
+  for (const { source, value } of explicit) {
+    if (!value) continue;
+    const dir = path.resolve(expandHome(value));
+    // An explicit root that is wrong is a configuration error, not a reason to
+    // keep guessing: silently searching on would reintroduce the old failure.
+    if (!looksLikeStoreRoot(dir)) {
+      throw new CliError(`${source} is not a site store: no 'sites/' directory at ${dir}`, {
+        code: 'STORE_ROOT_INVALID',
+        exitCode: 2,
+        details: { source, path: dir },
+      });
+    }
+    return dir;
+  }
+  attempts.push('--store-root (not set)', 'WEBMCP_STORE_ROOT (not set)');
+
+  const fromPackage = resolveStoreFromPackage();
+  if (fromPackage && looksLikeStoreRoot(fromPackage)) return fromPackage;
+  attempts.push(`${SITE_STORE_PACKAGE} (not installed)`);
+
+  const fromWalk = walkUpForStoreRoot(manifestPath);
+  if (fromWalk) return fromWalk;
+  attempts.push(`upward walk from ${path.dirname(path.resolve(manifestPath))} (no 'sites/' found)`);
+
+  throw new CliError(
+    `Site store not found for pipeline ${path.resolve(manifestPath)}. Tried: ${attempts.join('; ')}. ` +
+      `Pass --store-root <path>, set WEBMCP_STORE_ROOT, or install ${SITE_STORE_PACKAGE}.`,
+    { code: 'STORE_ROOT_NOT_FOUND', exitCode: 2, details: { manifestPath: path.resolve(manifestPath), attempts } },
+  );
 }
 
 function stageRisk(stage) {
@@ -257,7 +334,11 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
   const warn = (m) => stderr.write(`⚠  ${m}\n`);
 
   const { abs, manifest } = loadManifest(manifestPath);
-  const storeRoot = findStoreRoot(abs);
+  // Read env before resolving the store: WEBMCP_STORE_ROOT participates in that
+  // resolution, and a store we cannot find must fail here rather than surface
+  // later as a missing workflow file.
+  const env = readEnv();
+  const storeRoot = findStoreRoot(abs, { storeRootOption: cliOptions.storeRoot, env });
   const stages = manifest.stages || [];
   const settings = manifest.settings || {};
   const onStageFail = settings.onStageFail || 'stop';
@@ -303,8 +384,10 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     return { status: 'failed', runId, reason: manifestErrors.join('; '), errors: manifestErrors };
   }
 
-  const env = readEnv();
-  const config = loadConfig({ configPath: cliOptions.config, cwd: storeRoot, env });
+  // Config is per-machine state (notably the `gateways.<name>.profiles` alias
+  // map), so it is resolved from the process cwd and the user's home — never
+  // from storeRoot, which is about to be a read-only npm dependency.
+  const config = loadConfig({ configPath: cliOptions.config || env.configPath, env });
 
   for (let i = startIndex; i < stages.length; i++) {
     const stage = stages[i];
