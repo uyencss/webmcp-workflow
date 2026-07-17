@@ -16,3 +16,6 @@ coverage/
 dist/
 tmp/
 *.log
+
+# Local Claude Code config
+.claude/
