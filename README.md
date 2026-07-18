@@ -218,6 +218,11 @@ against the config/cwd — e.g. set `".workflow-runs"` to keep artifacts inside 
 current project as in earlier versions). Use `--no-history` to disable history
 for a run.
 
+When the Automation Runner launches a project-scoped pipeline, it supplies
+`--history-dir` and `--checkpoint-dir` under the canonical run bundle's
+`.internal/` directory. Direct workflow invocations remain backward-compatible
+and continue to use the shared home default.
+
 ## Playbooks & Agentic Recovery
 
 A workflow can ship a **playbook** — a sibling `<name>.playbook.md` that gives an

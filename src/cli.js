@@ -74,6 +74,7 @@ Common options:
   --json-events                   Stream runner event envelopes as JSONL
   --strict                        Treat unknown template variables as validation errors
   --allow-unknown-command         Allow passthrough gateway commands not in catalog
+  --checkpoint-dir <path>         Pipeline checkpoint root override
   --help                          Show help
   --version                       Print the CLI version
 
@@ -213,6 +214,11 @@ function parseArgs(args, cwd = process.cwd()) {
     }
     if (arg === '--history-dir') {
       result.options.historyDir = readOptionValue(args, i, '--history-dir');
+      i += 1;
+      continue;
+    }
+    if (arg === '--checkpoint-dir') {
+      result.options.checkpointDir = readOptionValue(args, i, '--checkpoint-dir');
       i += 1;
       continue;
     }

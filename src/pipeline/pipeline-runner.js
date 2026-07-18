@@ -356,7 +356,9 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
   const stages = manifest.stages || [];
   const settings = manifest.settings || {};
   const onStageFail = settings.onStageFail || 'stop';
-  const checkpointDir = path.resolve(expandHome(settings.checkpointDir || path.join(webmcpHome(), 'pipelines')));
+  const checkpointDir = path.resolve(expandHome(
+    cliOptions.checkpointDir || settings.checkpointDir || path.join(webmcpHome(), 'pipelines'),
+  ));
   const manifestHash = hashOf(JSON.stringify(manifest));
   const storeGitSha = gitShaFor(storeRoot);
   const stageAnchors = buildStageAnchors(stages, storeRoot);
@@ -380,7 +382,7 @@ async function runPipeline({ manifestPath, resumeRunId, cliOptions = {}, context
     }
     log(`▶ resume pipeline ${manifest.id} runId=${runId} from stage #${startIndex}`);
   } else {
-    runId = `${manifest.id}-${shortId()}`;
+    runId = cliOptions.runId || `${manifest.id}-${shortId()}`;
     // Pipeline inputs follow the same override contract as workflow inputs:
     // command-line variables win over manifest defaults at run creation time.
     state = { PIPELINE: { ...(manifest.variables || {}), ...(cliOptions.variables || {}) } };

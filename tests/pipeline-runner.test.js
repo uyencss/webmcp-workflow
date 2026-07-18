@@ -267,6 +267,39 @@ test('pipeline runtime variables override manifest defaults for every stage', as
   assert.deepEqual(prompts, ['Research this niche']);
 });
 
+test('pipeline run accepts a canonical run id and per-run internal roots', async () => {
+  const resolvedOptions = [];
+  const { runPipeline } = loadPipelineRunnerWithMock(async (resolved) => {
+    resolvedOptions.push(resolved.historyDir);
+    return {
+      exitCode: 0,
+      summary: { context: { outputs: { FINAL_REPORT: { ok: true } } } },
+    };
+  });
+  const storeRoot = makeStore();
+  const manifestPath = path.join(storeRoot, '_cross-site', 'pipelines', 'canonical.pipeline.json');
+  const checkpointDir = path.join(storeRoot, 'run', '.internal', 'pipeline');
+  const historyDir = path.join(storeRoot, 'run', '.internal', 'workflow');
+  writeJson(manifestPath, {
+    id: 'canonical',
+    stages: [{ id: 'read', workflow: 'sites/demo/workflows/stage.json' }],
+  });
+
+  const result = await runPipeline({
+    manifestPath,
+    cliOptions: {
+      runId: 'run_canonical',
+      checkpointDir,
+      historyDir,
+    },
+    context: makeContext(),
+  });
+
+  assert.equal(result.runId, 'run_canonical');
+  assert.equal(existsSync(path.join(checkpointDir, 'run_canonical', 'pipeline-summary.json')), true);
+  assert.deepEqual(resolvedOptions, [historyDir]);
+});
+
 test('pipeline with hydration resolves refs recursively inside arrays and objects', () => {
   const { hydrateWith } = require('../src/pipeline/pipeline-runner');
   const state = {

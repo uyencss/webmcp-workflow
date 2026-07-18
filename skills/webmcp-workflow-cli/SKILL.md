@@ -95,6 +95,12 @@ per project (a relative value resolves against the config/cwd). For example,
 `--history-dir .workflow-runs-real` is an explicit in-repo smoke-test override;
 omit the flag to write to the default `~/.webmcp/workflow-runs`.
 
+When invoked by a project-scoped Automation Runner pipeline, the runner passes
+`--history-dir` and `--checkpoint-dir` under the parent run bundle's
+`.internal/` directory. This keeps child history and pipeline checkpoints with
+the canonical run; direct workflow invocations remain on the shared home
+default.
+
 ## Recovery Loop (when a run fails)
 
 A workflow may ship with a **playbook** — a sibling `<name>.playbook.md` that
