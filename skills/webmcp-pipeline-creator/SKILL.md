@@ -142,6 +142,14 @@ webmcp-workflow pipeline resume <runId>      # or resume one directly
 Checkpoints are written after every stage, so a failure/pause resumes from the
 exact stage without re-running earlier (credit-spending / already-published) ones.
 
+> **Queue-driven operation.** `pipeline run` executes one run. To drive the same
+> pipeline durably over many inputs — one item per invocation, with SQLite queue
+> state, leases, retry, and append-only history — that is the
+> **`webmcp-automation-runner`** skill's job, not the pipeline's. A queue-capable
+> pipeline just accepts the runner's one standard `ITEM` object
+> (`{{PIPELINE.ITEM}}`, `ITEM_KEY`, `ITEM_TYPE`, `ITEM_CONFIG`) and maps it into
+> the child workflow via `with`. Do not build the loop into the pipeline itself.
+
 ---
 
 ## 6. Authoring checklist
