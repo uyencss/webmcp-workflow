@@ -89,6 +89,13 @@ function resolveRef(state, ref) {
 // Hydrate one `with` value: a sole `{{X.y}}` returns the actual value (object/array
 // preserved); an embedded ref does string interpolation (objects JSON-stringified).
 function hydrateValue(value, state) {
+  if (Array.isArray(value)) return value.map((item) => hydrateValue(item, state));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+      key,
+      hydrateValue(item, state),
+    ]));
+  }
   if (typeof value !== 'string') return value;
   const sole = value.match(/^\{\{\s*([\w.]+)\s*\}\}$/);
   if (sole) return resolveRef(state, sole[1]);

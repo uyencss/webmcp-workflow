@@ -267,6 +267,30 @@ test('pipeline runtime variables override manifest defaults for every stage', as
   assert.deepEqual(prompts, ['Research this niche']);
 });
 
+test('pipeline with hydration resolves refs recursively inside arrays and objects', () => {
+  const { hydrateWith } = require('../src/pipeline/pipeline-runner');
+  const state = {
+    PIPELINE: {
+      ITEM: 'sách triết học',
+      ITEM_CONFIG: { maxPages: 1, topN: 20 },
+    },
+  };
+
+  assert.deepEqual(hydrateWith({
+    KEYWORDS: ['{{PIPELINE.ITEM}}'],
+    OPTIONS: {
+      maxPages: '{{PIPELINE.ITEM_CONFIG.maxPages}}',
+      label: 'query={{PIPELINE.ITEM}}',
+    },
+  }, state), {
+    KEYWORDS: ['sách triết học'],
+    OPTIONS: {
+      maxPages: 1,
+      label: 'query=sách triết học',
+    },
+  });
+});
+
 test('pipeline approve accepts a manifest to resolve custom checkpointDir', async () => {
   const { runPipeline } = loadPipelineRunnerWithMock(async () => {
     throw new Error('outward-facing gate should pause before execution');
